@@ -10,6 +10,12 @@ export default tseslint.config(
   {
     ...tseslint.configs.disableTypeChecked,
     files: ["**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: {
+        ...globals.node,
+      },
+    },
   },
   {
     files: ["**/*.{ts,tsx,mts,cts}"],
@@ -30,6 +36,7 @@ export default tseslint.config(
       "jsx-a11y": jsxA11y,
     },
     rules: {
+      ...reactHooks.configs.flat.recommended.rules,
       ...jsxA11y.flatConfigs.recommended.rules,
       "no-restricted-imports": [
         "error",
