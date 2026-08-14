@@ -1,0 +1,9 @@
+.base-theme-probe {
+  color: var(--base-color-text-primary);
+  background: var(--base-color-surface-primary);
+  border: 1px solid var(--base-color-border-subtle);
+  border-radius: var(--base-radius-md);
+  padding: var(--base-space-3);
+  font-size: var(--base-font-size-control);
+  transition: color var(--base-duration-fast) var(--base-ease-standard);
+}
