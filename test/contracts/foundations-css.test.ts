@@ -35,6 +35,25 @@ const semanticTokens = [
   "--base-color-code-border",
 ] as const;
 
+const foundationClasses = [
+  ".base-type-display",
+  ".base-type-heading-lg",
+  ".base-type-heading-md",
+  ".base-type-heading-sm",
+  ".base-type-action",
+  ".base-type-input",
+  ".base-type-body-lg",
+  ".base-type-body",
+  ".base-type-body-sm",
+  ".base-type-caption",
+  ".base-type-mono",
+  ".base-link",
+  ".base-link-muted",
+  ".base-tabular-nums",
+  ".base-focus-ring",
+  ".base-pressable",
+] as const;
+
 function blockFor(pattern: RegExp) {
   const match = tokens.match(pattern);
   const block = match?.[1];
@@ -75,5 +94,19 @@ describe("foundation CSS contract", () => {
     expect(withoutComments).not.toMatch(/(^|})\s*(html|body|\*)\b/);
     expect(withoutComments).not.toContain('@import "tailwindcss"');
     expect(withoutComments).not.toContain("@tailwind");
+  });
+
+  it("exports every approved opt-in foundation class", () => {
+    for (const className of foundationClasses) {
+      expect(styles).toContain(className);
+    }
+  });
+
+  it("guards hover and reduced-motion press behavior", () => {
+    expect(styles).toContain("@media (hover: hover) and (pointer: fine)");
+    expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(styles).toContain("scale: var(--base-interaction-press-scale)");
+    expect(styles).toContain("opacity: var(--base-interaction-press-opacity-reduced)");
+    expect(styles).toContain(':is(:disabled, [aria-disabled="true"])');
   });
 });
