@@ -47,7 +47,7 @@
     "prepack": "pnpm build",
     "test": "vitest run --exclude test/contracts/tarball-contents.test.ts",
     "test:tarball": "vitest run test/contracts/tarball-contents.test.ts",
-    "test:watch": "vitest",
+    "test:watch": "vitest --exclude test/contracts/tarball-contents.test.ts",
     "typecheck": "tsc --noEmit",
     "prerelease:enter": "changeset pre enter alpha",
     "version-packages": "changeset version",
