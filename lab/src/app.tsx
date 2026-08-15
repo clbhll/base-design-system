@@ -77,6 +77,9 @@ export function App() {
           <p className="base-type-body">
             Scoped override: <a className="base-link" href="#override">consumer accent</a>
           </p>
+          <button className="lab-pressable base-focus-ring base-pressable base-type-action" type="button">
+            Consumer accent
+          </button>
         </section>
       </main>
       <DevTools />
