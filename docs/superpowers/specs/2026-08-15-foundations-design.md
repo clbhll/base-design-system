@@ -178,7 +178,7 @@ Both link classes include the Base focus ring on `:focus-visible`. Hover changes
 
 Native `:disabled` and `[aria-disabled="true"]` states suppress the press transform. Base does not set `pointer-events: none` on ARIA-disabled elements because they may need to remain focusable for accessible explanation.
 
-Under `prefers-reduced-motion: reduce`, reference durations become `0ms`, press scale is removed, and the enabled active state uses `opacity: 0.8` as non-spatial feedback. Essential focus and state signals remain visible.
+Under `prefers-reduced-motion: reduce`, semantic interaction durations become `0ms`, press scale is removed, and the enabled active state uses `opacity: 0.8` as non-spatial feedback. Essential focus and state signals remain visible.
 
 Future components may compose these classes internally, but each component still owns its semantic hover, disabled, loading, error, and success presentation.
 
