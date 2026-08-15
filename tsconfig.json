@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@calebhill/base": ["./src/index.ts"]
+    },
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["vitest/globals", "node"]
+  },
+  "include": ["src", "lab", "test", "scripts", "tsup.config.ts", "vitest.config.ts", "eslint.config.mjs"],
+  "exclude": ["dist", "node_modules", "test/fixtures/vite-smoke"]
+}

@@ -1,0 +1,29 @@
+:root,
+[data-base-theme="light"] {
+  --base-color-text-primary: oklch(22% 0.02 255);
+  --base-color-surface-primary: oklch(99% 0.01 255);
+  --base-color-border-subtle: oklch(88% 0.01 255);
+  --base-radius-md: 0.75rem;
+  --base-space-3: 0.75rem;
+  --base-font-size-control: 1rem;
+  --base-duration-fast: 140ms;
+  --base-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-base-theme="dark"] {
+  --base-color-text-primary: oklch(96% 0.01 255);
+  --base-color-surface-primary: oklch(25% 0.02 255);
+  --base-color-border-subtle: oklch(41% 0.01 255);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --base-duration-fast: 0ms;
+  }
+}
+
+@media (pointer: fine) {
+  :root {
+    --base-fine-pointer: 1;
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "name": "@calebhill/base",
+  "version": "0.0.0",
+  "description": "Project-agnostic React design system foundations and components.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clbhll/base-design-system.git"
+  },
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "sideEffects": [
+    "./dist/tokens.css",
+    "./dist/styles.css"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./styles.css": "./dist/styles.css"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "provenance": true,
+    "tag": "next"
+  },
+  "scripts": {
+    "build": "tsup && pnpm build:css",
+    "build:css": "node scripts/build-css.mjs",
+    "changeset": "changeset",
+    "clean": "rm -rf dist coverage .tmp",
+    "lint": "eslint .",
+    "lab:build": "vite build --config lab/vite.config.ts",
+    "lab:dev": "vite --config lab/vite.config.ts",
+    "prepack": "pnpm build",
+    "test": "vitest run --exclude test/contracts/tarball-contents.test.ts",
+    "test:tarball": "vitest run test/contracts/tarball-contents.test.ts",
+    "test:watch": "vitest --exclude test/contracts/tarball-contents.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prerelease:enter": "changeset pre enter alpha",
+    "version-packages": "changeset version",
+    "fixture:test": "node scripts/test-packed-fixture.mjs",
+    "verify": "pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build && pnpm lab:build && pnpm test:tarball && pnpm fixture:test"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.0",
+    "@eslint/js": "^9.39.5",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.2.0",
+    "agentation": "^3.0.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "jsdom": "^30.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10",
+    "vitest-axe": "^0.1.0"
+  }
+}
