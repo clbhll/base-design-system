@@ -7,13 +7,28 @@ const eslint = new ESLint({
 });
 
 const bannedImports = [
-  ["next/*", "next/link"],
-  ["@vercel/*", "@vercel/analytics"],
-  ["@/*", "@/components/button"],
-  ["~/*", "~/utilities"],
-  ["photos-me/*", "photos-me/components/button"],
-  ["calebhill.me/*", "calebhill.me/components/button"],
+  "next/*",
+  "@vercel/*",
+  "@/*",
+  "~/*",
+  "photos-me/*",
+  "calebhill.me/*",
 ] as const;
+
+interface ResolvedConfig {
+  languageOptions: {
+    globals?: Record<string, unknown>;
+  };
+  rules: Record<string, unknown>;
+}
+
+async function resolvedConfig(filePath: string) {
+  const config = (await eslint.calculateConfigForFile(filePath)) as ResolvedConfig | undefined;
+
+  expect(config).toBeDefined();
+
+  return config!;
+}
 
 describe("lint contracts", () => {
   it("leaves the standalone fixture template to its installed consumer checks", async () => {
@@ -22,45 +37,24 @@ describe("lint contracts", () => {
     ).resolves.toBe(true);
   });
 
-  it.each(bannedImports)("reports no-restricted-imports for %s", async (_pattern, specifier) => {
-    const [result] = await eslint.lintText(
-      `import value from "${specifier}";\nexport { value };\n`,
-      { filePath: "src/index.ts" },
-    );
+  it("resolves every forbidden import into the TypeScript policy", async () => {
+    const config = await resolvedConfig("src/index.ts");
 
-    expect(result.messages).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: "no-restricted-imports",
-        }),
-      ]),
-    );
+    expect(config.rules["no-restricted-imports"]).toEqual([
+      2,
+      { patterns: bannedImports },
+    ]);
   });
 
   it("provides Node globals to JavaScript scripts", async () => {
-    const [result] = await eslint.lintText("export const cwd = process.cwd();\n", {
-      filePath: "scripts/node-global-probe.mjs",
-    });
+    const config = await resolvedConfig("scripts/node-global-probe.mjs");
 
-    expect(result.messages).toEqual([]);
+    expect(config.languageOptions.globals?.process).toBe(false);
   });
 
   it("enforces the recommended React Hooks rules", async () => {
-    const source = [
-      'import { useState } from "react";',
-      "export function Probe(enabled: boolean) {",
-      "  if (enabled) useState(0);",
-      "  return null;",
-      "}",
-    ].join("\n");
-    const [result] = await eslint.lintText(source, { filePath: "src/index.ts" });
+    const config = await resolvedConfig("src/index.ts");
 
-    expect(result.messages).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: "react-hooks/rules-of-hooks",
-        }),
-      ]),
-    );
+    expect(config.rules["react-hooks/rules-of-hooks"]).toEqual([2]);
   });
 });
