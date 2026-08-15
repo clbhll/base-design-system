@@ -8,9 +8,15 @@ function FixtureApp() {
   const theme = "light";
 
   return (
-    <div className="base-theme-probe" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
-      fixture:{isBaseTheme(theme) ? theme : "invalid"}
-    </div>
+    <section className="base-type-body" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
+      fixture:{isBaseTheme(theme) ? theme : "invalid"}{" "}
+      <a className="base-link" href="#fixture">
+        link
+      </a>
+      <button className="base-focus-ring base-pressable base-type-action" type="button">
+        pressable
+      </button>
+    </section>
   );
 }
 
