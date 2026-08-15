@@ -17,6 +17,16 @@ const typeRoles = [
   ["Mono", "base-type-mono"],
 ] as const;
 
+const linkSurfaces = [
+  ["Background", "background"],
+  ["Subtle", "background-subtle"],
+  ["Surface", "surface"],
+  ["Surface hover", "surface-hover"],
+  ["Surface active", "surface-active"],
+  ["Surface disabled", "surface-disabled"],
+  ["Accent subtle", "accent-subtle"],
+] as const;
+
 function ThemePanel({ theme }: { theme: BaseTheme }) {
   return (
     <section className="lab-panel" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
@@ -32,7 +42,12 @@ function ThemePanel({ theme }: { theme: BaseTheme }) {
           ["Surface", "surface"],
           ["Accent", "accent"],
         ].map(([label, token]) => (
-          <div className="lab-swatch" key={token} style={{ background: `var(--base-color-${token})` }}>
+          <div
+            className="lab-swatch"
+            data-semantic-color={token}
+            key={token}
+            style={{ background: `var(--base-color-${token})` }}
+          >
             <span className="base-type-caption">{label}</span>
           </div>
         ))}
@@ -46,9 +61,28 @@ function ThemePanel({ theme }: { theme: BaseTheme }) {
         ))}
       </div>
 
+      <div className="lab-section lab-link-surfaces">
+        {linkSurfaces.map(([label, token]) => (
+          <div
+            className="lab-link-surface"
+            data-semantic-color={token}
+            key={token}
+            style={{ background: `var(--base-color-${token})` }}
+          >
+            <span className="base-type-caption">{label}</span>
+            <span className="base-type-body">
+              <a className="base-link" href={`#${theme}-${token}-standard`}>
+                Standard link
+              </a>{" "}
+              <a className="base-link-muted" href={`#${theme}-${token}-muted`}>
+                Muted link
+              </a>
+            </span>
+          </div>
+        ))}
+      </div>
+
       <div className="lab-section base-type-body">
-        <a className="base-link" href="#standard-link">Standard link</a>{" "}
-        <a className="base-link-muted" href="#muted-link">Muted link</a>{" "}
         <code className="base-type-mono lab-code">inline code</code>{" "}
         <span className="base-tabular-nums">01:23:45</span>
       </div>

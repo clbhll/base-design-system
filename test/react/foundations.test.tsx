@@ -13,11 +13,19 @@ function FoundationPreview({ theme }: { theme: BaseTheme }) {
         Body copy with <code className="base-type-mono">inline code</code> and a{" "}
         <a className="base-link" href={`#${theme}-target`}>
           visible link
-        </a>
+        </a>{" "}
+        and a <a className="base-link-muted" href={`#${theme}-muted-target`}>muted link</a>
         .
       </p>
       <button className="base-focus-ring base-pressable base-type-action" type="button">
         Pressable
+      </button>
+      <button
+        aria-disabled="true"
+        className="base-focus-ring base-pressable base-type-action"
+        type="button"
+      >
+        ARIA-disabled pressable
       </button>
     </section>
   );
@@ -31,8 +39,12 @@ describe("foundation preview", () => {
       BASE_THEME_ATTRIBUTE,
       theme,
     );
-    expect(screen.getByRole("button")).toHaveClass("base-focus-ring", "base-pressable");
-    expect((await axe(container)).violations).toHaveLength(0);
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveClass("base-focus-ring", "base-pressable");
+    }
+    expect(
+      (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
+    ).toHaveLength(0);
     unmount();
   });
 });

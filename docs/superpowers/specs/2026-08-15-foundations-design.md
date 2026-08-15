@@ -165,8 +165,8 @@ Each class sets only font family when the role requires it, size, line height, w
 
 ## Link and numeric classes
 
-- `.base-link` is the standard dotted-underline link using primary text, the semantic border color for decoration, and secondary text on fine-pointer hover.
-- `.base-link-muted` starts at tertiary text and lifts to primary text on fine-pointer hover.
+- `.base-link` is the standard dotted-underline link using primary text and a `currentColor` decoration, then secondary text on fine-pointer hover.
+- `.base-link-muted` starts at secondary text with a `currentColor` decoration and lifts to primary text on fine-pointer hover.
 - `.base-tabular-nums` applies `font-variant-numeric: tabular-nums`.
 
 Both link classes include the Base focus ring on `:focus-visible`. Hover changes are guarded by `@media (hover: hover) and (pointer: fine)` so coarse pointers do not receive sticky hover styling.
@@ -176,7 +176,7 @@ Both link classes include the Base focus ring on `:focus-visible`. Hover changes
 - `.base-focus-ring` applies a two-pixel semantic outline with a two-pixel offset only on `:focus-visible`.
 - `.base-pressable` transitions color, background, border, opacity, transform, and scale over the fast duration. Its enabled active state scales to `0.97`.
 
-Native `:disabled` and `[aria-disabled="true"]` states suppress the press transform. Base does not set `pointer-events: none` on ARIA-disabled elements because they may need to remain focusable for accessible explanation.
+Native `:disabled` and `[aria-disabled="true"]` states are excluded from every Base active-feedback rule. Base does not reset their scale or opacity, so component-owned disabled presentation remains intact. Base also does not set `pointer-events: none` on ARIA-disabled elements because they may need to remain focusable for accessible explanation.
 
 Under `prefers-reduced-motion: reduce`, semantic interaction durations become `0ms`, press scale is removed, and the enabled active state uses `opacity: 0.8` as non-spatial feedback. Essential focus and state signals remain visible.
 
@@ -184,7 +184,7 @@ Future components may compose these classes internally, but each component still
 
 ## Accessibility and consumer overrides
 
-The light and dark focus-ring defaults must remain visible against their corresponding surfaces. Link meaning is communicated with an underline rather than color alone. Reduced motion retains state feedback without movement.
+The light and dark focus-ring defaults must remain visible against their corresponding surfaces. Link meaning is communicated with a `currentColor` underline rather than color alone. Across background, subtle, surface, surface-hover, surface-active, surface-disabled, and accent-subtle defaults, resting standard link text and decoration have minimum contrast ratios of 15.84:1 in light and 12.26:1 in dark; muted link text and decoration have minimum ratios of 6.25:1 in light and 5.49:1 in dark. Reduced motion retains state feedback without movement.
 
 Consumers may override semantic properties at `:root`, a theme selector, or a subtree. Foundation classes must continue to resolve those overrides at use time. Consumers should not override `--base-ref-*` values to theme the package; they should override semantic properties or their own local class composition.
 

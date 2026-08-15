@@ -94,7 +94,7 @@
 .base-link-muted {
   text-decoration-line: underline;
   text-decoration-style: dotted;
-  text-decoration-color: var(--base-color-border);
+  text-decoration-color: currentColor;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
   transition-property: color, text-decoration-color;
@@ -107,7 +107,7 @@
 }
 
 .base-link-muted {
-  color: var(--base-color-text-tertiary);
+  color: var(--base-color-text-secondary);
 }
 
 .base-tabular-nums {
@@ -129,11 +129,6 @@
 
 .base-pressable:not(:disabled, [aria-disabled="true"]):active {
   scale: var(--base-interaction-press-scale);
-}
-
-.base-pressable:is(:disabled, [aria-disabled="true"]):active {
-  opacity: 1;
-  scale: 1;
 }
 
 @media (hover: hover) and (pointer: fine) {

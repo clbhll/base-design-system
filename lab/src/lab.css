@@ -54,6 +54,22 @@ body {
   border-radius: var(--base-ref-radius-sm);
 }
 
+.lab-swatch[data-semantic-color="accent"] {
+  color: var(--base-color-on-accent);
+}
+
+.lab-link-surfaces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lab-link-surface {
+  display: grid;
+  gap: var(--base-ref-space-2);
+  padding: var(--base-ref-space-3);
+  color: var(--base-color-text-primary);
+  border-radius: var(--base-ref-radius-sm);
+}
+
 .lab-code {
   padding: 0.125rem 0.375rem;
   background: var(--base-color-code-surface);
