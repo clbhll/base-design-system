@@ -23,12 +23,22 @@ try {
 
   cpSync(fixtureTemplateRoot, runRoot, { recursive: true });
 
+  execFileSync(
+    "pnpm",
+    ["install", "--frozen-lockfile", "--ignore-workspace", "--config.node-linker=isolated"],
+    { cwd: runRoot, stdio: "inherit" },
+  );
+
   const fixturePackageJsonPath = resolve(runRoot, "package.json");
   const fixturePackage = JSON.parse(readFileSync(fixturePackageJsonPath, "utf8"));
   fixturePackage.dependencies["@calebhill/base"] = `file:${tarball}`;
   writeFileSync(fixturePackageJsonPath, `${JSON.stringify(fixturePackage, null, 2)}\n`);
 
-  execFileSync("pnpm", ["install", "--ignore-workspace"], { cwd: runRoot, stdio: "inherit" });
+  execFileSync(
+    "pnpm",
+    ["install", "--offline", "--no-lockfile", "--ignore-workspace", "--config.node-linker=isolated"],
+    { cwd: runRoot, stdio: "inherit" },
+  );
   execFileSync("pnpm", ["typecheck"], { cwd: runRoot, stdio: "inherit" });
   execFileSync("pnpm", ["build"], { cwd: runRoot, stdio: "inherit" });
 } finally {
