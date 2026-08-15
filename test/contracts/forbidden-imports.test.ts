@@ -16,6 +16,12 @@ const bannedImports = [
 ] as const;
 
 describe("lint contracts", () => {
+  it("leaves the standalone fixture template to its installed consumer checks", async () => {
+    await expect(
+      eslint.isPathIgnored("test/fixtures/vite-smoke/src/main.tsx"),
+    ).resolves.toBe(true);
+  });
+
   it.each(bannedImports)("reports no-restricted-imports for %s", async (_pattern, specifier) => {
     const [result] = await eslint.lintText(
       `import value from "${specifier}";\nexport { value };\n`,
