@@ -1,8 +1,8 @@
 # Base Design System Alpha
 
-**Status:** Approved for implementation  
-**Date:** 2026-08-14  
-**Linear project:** `base-design-system`  
+**Status:** Approved for implementation
+**Date:** 2026-08-14
+**Linear project:** `base-design-system`
 **Package:** `@calebhill/base`
 
 ## Context
