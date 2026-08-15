@@ -49,7 +49,7 @@ See [docs/releasing.md](docs/releasing.md) for the Changesets release-preparatio
 
 ## Roadmap
 
-The first real component migrations follow this package foundation: Button in CLB-692, TextInput in CLB-694, and ProgressBar plus StatusTag in CLB-695.
+The package foundation and tokens are tracked in CLB-692. Button, ButtonLink, and icons follow in CLB-694; TextInput, ProgressBar, and StatusTag follow in CLB-695.
 
 ## License
 
