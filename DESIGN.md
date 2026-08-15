@@ -138,10 +138,10 @@ Approved now:
 - Light and dark defaults use the `data-base-theme` contract.
 - `@calebhill/animations` owns shared motion primitives.
 - `photos.me` and `calebhill.me` are the supported reference consumers.
+- CLB-692 approved foundation vocabulary uses `--base-ref-*` raw scales, overrideable `--base-*` semantic properties, the photos.me light palette and component type scale, the calebhill.me dark palette, and opt-in `.base-*` foundation classes; the detailed inventory lives in `docs/superpowers/specs/2026-08-15-foundations-design.md`.
 
 Intentionally open:
 
-- CLB-692 will approve the complete semantic token and typography vocabulary.
 - Component lifecycle labels and documentation presentation will mature with the alpha slice.
 - The canonical Figma file, library publication model, and Code Connect mapping are future approved work.
 - CLB-705 owns the first prerelease version, dist-tag, and trusted publishing workflow.

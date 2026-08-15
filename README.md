@@ -26,6 +26,25 @@ Light tokens are the default. Set the package theme contract on an application r
 
 Supported values are `data-base-theme="light"` and `data-base-theme="dark"`.
 
+Import only the token contract when a consumer supplies all component and foundation styles itself:
+
+```ts
+import "@calebhill/base/tokens.css";
+```
+
+Override semantic properties through normal CSS cascade. For example, CalebHill's light theme retains its product accent without creating another Base theme:
+
+```css
+[data-base-theme="light"] {
+  --base-color-accent: #0082f6;
+  --base-color-accent-hover: #56afff;
+  --base-color-accent-active: #0062b8;
+  --base-color-focus-ring: #0082f6;
+}
+```
+
+The complete stylesheet exports opt-in `.base-type-*`, `.base-link*`, `.base-tabular-nums`, `.base-focus-ring`, and `.base-pressable` classes. It does not style `body`, reset elements, or require Tailwind.
+
 ## Development
 
 Install dependencies and run the same fail-fast gate used by CI:
@@ -51,7 +70,7 @@ See [docs/releasing.md](docs/releasing.md) for the Changesets release-preparatio
 
 ## Roadmap
 
-CLB-691 is the completed package scaffold. CLB-692 owns foundations and tokens; CLB-694 owns Button, ButtonLink, and icons; CLB-695 owns TextInput, ProgressBar, and StatusTag.
+CLB-691 is the completed package scaffold. CLB-692 is the completed foundation and token slice. CLB-694 is the next Button, ButtonLink, and icon slice; CLB-695 is the next TextInput, ProgressBar, and StatusTag slice.
 
 ## License
 

@@ -36,4 +36,16 @@ describe("design documentation contract", () => {
 
     expect(document).toMatch(/\[.*design.*contract.*\]\(DESIGN\.md\)/i);
   });
+
+  it("records the approved CLB-692 foundation contract", async () => {
+    const [readme, design] = await Promise.all([
+      readRepositoryFile("README.md"),
+      readRepositoryFile("DESIGN.md"),
+    ]);
+
+    expect(readme).toContain('import "@calebhill/base/tokens.css"');
+    expect(readme).toContain("--base-color-accent: #0082f6");
+    expect(design).toContain("CLB-692 approved foundation vocabulary");
+    expect(design).not.toContain("CLB-692 will approve the complete semantic token");
+  });
 });
