@@ -2,6 +2,8 @@
 
 `@calebhill/base` is a project-agnostic React design system for Caleb Hill's web projects. It provides framework-independent package APIs, semantic tokens, accessible components, and compiled CSS that requires no consumer Tailwind configuration.
 
+Read the [AI-first design contract](DESIGN.md) before changing tokens, components, motion, accessibility behavior, or public APIs. Repository workflow and validation commands live in [AGENTS.md](AGENTS.md).
+
 ## Consumer setup
 
 Install the package and its React peer dependencies:
