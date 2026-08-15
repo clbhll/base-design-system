@@ -3,6 +3,14 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("css build", () => {
+  it("keeps the lab aggregate aligned with the public stylesheet order", () => {
+    const labStyles = readFileSync("lab/src/styles.css", "utf8");
+
+    expect(labStyles).toBe(
+      '@import "../../src/styles/tokens.css";\n@import "../../src/styles/styles.css";\n',
+    );
+  });
+
   it("copies tokens and concatenates styles in order", () => {
     rmSync("dist", { force: true, recursive: true });
     mkdirSync("dist", { recursive: true });

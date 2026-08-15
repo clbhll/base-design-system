@@ -8,7 +8,7 @@ export default defineConfig({
     alias: [
       {
         find: "@calebhill/base/styles.css",
-        replacement: fileURLToPath(new URL("../src/styles/styles.css", import.meta.url)),
+        replacement: fileURLToPath(new URL("./src/styles.css", import.meta.url)),
       },
       {
         find: "@calebhill/base/tokens.css",
