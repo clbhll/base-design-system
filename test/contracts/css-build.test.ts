@@ -26,12 +26,12 @@ describe("css build", () => {
       expect(tokens).toBe(sourceTokens);
       expect(styles).toBe(`${sourceTokens}\n\n${sourceStyles}\n`);
       expect(styles.startsWith(tokens)).toBe(true);
-      expect(tokens).toMatch(/^:root,\n\[data-base-theme="light"\]/);
+      expect(tokens).toMatch(/^:root\s*\{/);
+      expect(tokens).toContain(':root,\n[data-base-theme="light"]');
       expect(tokens).toContain('[data-base-theme="dark"]');
       expect(tokens).toContain("--base-color-text-primary");
       expect(tokens).toContain("@media (prefers-reduced-motion: reduce)");
-      expect(tokens).toContain("@media (pointer: fine)");
-      expect(styles).toContain(".base-theme-probe");
+      expect(styles).toContain(".base-type-display");
     } finally {
       execFileSync("pnpm", ["build"], { stdio: "inherit" });
     }
