@@ -102,6 +102,12 @@ describe("foundation CSS contract", () => {
     }
   });
 
+  it("sets the mono typography role to regular weight", () => {
+    expect(styles).toMatch(
+      /\.base-type-mono\s*\{[^}]*font-weight:\s*var\(--base-ref-font-weight-regular\);[^}]*\}/s,
+    );
+  });
+
   it("guards hover and reduced-motion press behavior", () => {
     expect(styles).toContain("@media (hover: hover) and (pointer: fine)");
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");

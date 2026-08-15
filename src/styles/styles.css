@@ -86,6 +86,7 @@
   font-family: var(--base-font-family-mono);
   font-size: var(--base-ref-font-size-200);
   line-height: var(--base-ref-line-height-250);
+  font-weight: var(--base-ref-font-weight-regular);
   letter-spacing: var(--base-ref-letter-spacing-normal);
 }
 
