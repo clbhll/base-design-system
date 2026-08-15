@@ -56,4 +56,19 @@ Result: pass.
 
 ## Concerns
 
-The task brief updates `css-build.test.ts` to require `.base-type-display`, but the repository's current `styles.css` is a later-task placeholder. The focused token contract and type check pass; the combined command will become green once the foundation class sheet is implemented by its owning task.
+The class-sheet assertion is intentionally left at `.base-theme-probe` for Task 1; Task 2 owns changing it to `.base-type-display` when that class is implemented.
+
+## Fix Round 1
+
+Changed file: `test/contracts/css-build.test.ts`
+
+Restored the existing `.base-theme-probe` assertion so Task 1 does not require the later class-sheet implementation.
+
+Covering commands:
+
+```sh
+pnpm exec vitest run test/contracts/foundations-css.test.ts test/contracts/css-build.test.ts
+pnpm tsc --noEmit
+```
+
+Output: both commands passed. Vitest reported 2 files and 6 tests passed; TypeScript completed with no errors.

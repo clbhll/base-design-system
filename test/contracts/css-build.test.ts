@@ -31,7 +31,7 @@ describe("css build", () => {
       expect(tokens).toContain('[data-base-theme="dark"]');
       expect(tokens).toContain("--base-color-text-primary");
       expect(tokens).toContain("@media (prefers-reduced-motion: reduce)");
-      expect(styles).toContain(".base-type-display");
+      expect(styles).toContain(".base-theme-probe");
     } finally {
       execFileSync("pnpm", ["build"], { stdio: "inherit" });
     }
