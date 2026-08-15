@@ -1,7 +1,7 @@
 # Base Foundations Design
 
-**Issue:** CLB-692  
-**Status:** Approved for implementation planning  
+**Issue:** CLB-692
+**Status:** Approved for implementation planning
 **Package:** `@calebhill/base`
 
 ## Purpose
