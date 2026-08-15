@@ -1,9 +1,149 @@
-.base-theme-probe {
+.base-type-display,
+.base-type-heading-lg,
+.base-type-heading-md,
+.base-type-heading-sm,
+.base-type-action,
+.base-type-input,
+.base-type-body-lg,
+.base-type-body,
+.base-type-body-sm,
+.base-type-caption {
+  font-family: var(--base-font-family-sans);
+}
+
+.base-type-display {
+  font-size: var(--base-ref-font-size-700);
+  line-height: var(--base-ref-line-height-800);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-tight);
+}
+
+.base-type-heading-lg {
+  font-size: var(--base-ref-font-size-600);
+  line-height: var(--base-ref-line-height-500);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-tight);
+}
+
+.base-type-heading-md {
+  font-size: var(--base-ref-font-size-500);
+  line-height: var(--base-ref-line-height-350);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-tight);
+}
+
+.base-type-heading-sm {
+  font-size: var(--base-ref-font-size-400);
+  line-height: var(--base-ref-line-height-250);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-tight);
+}
+
+.base-type-action {
+  font-size: var(--base-ref-font-size-350);
+  line-height: var(--base-ref-line-height-400);
+  font-weight: var(--base-ref-font-weight-medium);
+  letter-spacing: var(--base-ref-letter-spacing-compact);
+}
+
+.base-type-input {
+  font-size: var(--base-ref-font-size-350);
+  line-height: var(--base-ref-line-height-350);
+  font-weight: var(--base-ref-font-weight-medium);
+  letter-spacing: var(--base-ref-letter-spacing-compact);
+}
+
+.base-type-body-lg {
+  font-size: var(--base-ref-font-size-400);
+  line-height: var(--base-ref-line-height-400);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-normal);
+}
+
+.base-type-body {
+  font-size: var(--base-ref-font-size-300);
+  line-height: var(--base-ref-line-height-300);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-normal);
+}
+
+.base-type-body-sm,
+.base-type-caption {
+  font-size: var(--base-ref-font-size-200);
+  line-height: var(--base-ref-line-height-200);
+  font-weight: var(--base-ref-font-weight-regular);
+}
+
+.base-type-body-sm {
+  letter-spacing: var(--base-ref-letter-spacing-normal);
+}
+
+.base-type-caption {
+  letter-spacing: var(--base-ref-letter-spacing-wider);
+}
+
+.base-type-mono {
+  font-family: var(--base-font-family-mono);
+  font-size: var(--base-ref-font-size-200);
+  line-height: var(--base-ref-line-height-250);
+  font-weight: var(--base-ref-font-weight-regular);
+  letter-spacing: var(--base-ref-letter-spacing-normal);
+}
+
+.base-link,
+.base-link-muted {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  transition-property: color, text-decoration-color;
+  transition-duration: var(--base-duration-interaction-fast);
+  transition-timing-function: ease-out;
+}
+
+.base-link {
   color: var(--base-color-text-primary);
-  background: var(--base-color-surface-primary);
-  border: 1px solid var(--base-color-border-subtle);
-  border-radius: var(--base-radius-md);
-  padding: var(--base-space-3);
-  font-size: var(--base-font-size-control);
-  transition: color var(--base-duration-fast) var(--base-ease-standard);
+}
+
+.base-link-muted {
+  color: var(--base-color-text-secondary);
+}
+
+.base-tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.base-link:focus-visible,
+.base-link-muted:focus-visible,
+.base-focus-ring:focus-visible {
+  outline: 2px solid var(--base-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.base-pressable {
+  transition-property: color, background-color, border-color, opacity, transform, scale;
+  transition-duration: var(--base-duration-interaction-fast);
+  transition-timing-function: ease-out;
+}
+
+.base-pressable:not(:disabled, [aria-disabled="true"]):active {
+  scale: var(--base-interaction-press-scale);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .base-link:hover {
+    color: var(--base-color-text-secondary);
+  }
+
+  .base-link-muted:hover {
+    color: var(--base-color-text-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-pressable:not(:disabled, [aria-disabled="true"]):active {
+    opacity: var(--base-interaction-press-opacity-reduced);
+    scale: 1;
+  }
 }
