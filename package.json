@@ -45,10 +45,11 @@
     "lab:build": "vite build --config lab/vite.config.ts",
     "lab:dev": "vite --config lab/vite.config.ts",
     "prepack": "pnpm build",
-    "test": "vitest run",
+    "test": "vitest run --exclude test/contracts/tarball-contents.test.ts",
     "test:tarball": "vitest run test/contracts/tarball-contents.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "prerelease:enter": "changeset pre enter alpha",
     "version-packages": "changeset version",
     "fixture:test": "node scripts/test-packed-fixture.mjs",
     "verify": "pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build && pnpm lab:build && pnpm test:tarball && pnpm fixture:test"

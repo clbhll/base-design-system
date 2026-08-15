@@ -49,7 +49,7 @@ See [docs/releasing.md](docs/releasing.md) for the Changesets release-preparatio
 
 ## Roadmap
 
-The package foundation and tokens are tracked in CLB-692. Button, ButtonLink, and icons follow in CLB-694; TextInput, ProgressBar, and StatusTag follow in CLB-695.
+CLB-691 is the completed package scaffold. CLB-692 owns foundations and tokens; CLB-694 owns Button, ButtonLink, and icons; CLB-695 owns TextInput, ProgressBar, and StatusTag.
 
 ## License
 
