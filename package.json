@@ -39,16 +39,19 @@
   "scripts": {
     "build": "tsup && pnpm build:css",
     "build:css": "node scripts/build-css.mjs",
+    "changeset": "changeset",
     "clean": "rm -rf dist coverage .tmp",
     "lint": "eslint .",
     "lab:build": "vite build --config lab/vite.config.ts",
     "lab:dev": "vite --config lab/vite.config.ts",
     "prepack": "pnpm build",
     "test": "vitest run",
+    "test:tarball": "vitest run test/contracts/tarball-contents.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "version-packages": "changeset version",
     "fixture:test": "node scripts/test-packed-fixture.mjs",
-    "verify": "pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build && pnpm lab:build"
+    "verify": "pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build && pnpm lab:build && pnpm test:tarball && pnpm fixture:test"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.0",
