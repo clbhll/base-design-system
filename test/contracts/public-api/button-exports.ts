@@ -1,1 +1,6 @@
-export const buttonRuntimeExports = [] as const;
+export const buttonRuntimeExports = [
+  "Button",
+  "ButtonLink",
+  "MoreIcon",
+  "TrashIcon",
+] as const;
