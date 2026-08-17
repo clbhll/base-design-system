@@ -21,7 +21,7 @@
 }
 
 .base-text-input-field::placeholder {
-  color: var(--base-color-text-tertiary);
+  color: var(--base-color-text-secondary);
 }
 
 .base-text-input-field:focus,

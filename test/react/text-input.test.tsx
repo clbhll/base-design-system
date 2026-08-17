@@ -75,6 +75,45 @@ describe("TextInput", () => {
     expect(error).toHaveClass("base-text-input-error", "base-type-caption");
   });
 
+  it("keeps distinct error associations stable across rerenders", () => {
+    const { rerender } = render(
+      <>
+        <TextInput aria-label="First caption" error="First caption is required" />
+        <TextInput aria-label="Second caption" error="Second caption is required" />
+      </>,
+    );
+
+    const firstInput = screen.getByRole("textbox", { name: "First caption" });
+    const secondInput = screen.getByRole("textbox", { name: "Second caption" });
+    const [firstError, secondError] = screen.getAllByRole("alert");
+    expect(firstError?.id).toBeTruthy();
+    expect(secondError?.id).toBeTruthy();
+    expect(firstError?.id).not.toBe(secondError?.id);
+    expect(firstInput).toHaveAttribute("aria-describedby", firstError?.id);
+    expect(secondInput).toHaveAttribute("aria-describedby", secondError?.id);
+
+    const firstId = firstError?.id;
+    const secondId = secondError?.id;
+    rerender(
+      <>
+        <TextInput aria-label="First caption" error="First caption is still required" />
+        <TextInput aria-label="Second caption" error="Second caption is still required" />
+      </>,
+    );
+
+    const [rerenderedFirstError, rerenderedSecondError] = screen.getAllByRole("alert");
+    expect(rerenderedFirstError?.id).toBe(firstId);
+    expect(rerenderedSecondError?.id).toBe(secondId);
+    expect(screen.getByRole("textbox", { name: "First caption" })).toHaveAttribute(
+      "aria-describedby",
+      firstId,
+    );
+    expect(screen.getByRole("textbox", { name: "Second caption" })).toHaveAttribute(
+      "aria-describedby",
+      secondId,
+    );
+  });
+
   it("preserves native disabled behavior", () => {
     render(<TextInput aria-label="Unavailable field" disabled placeholder="Unavailable" />);
 
