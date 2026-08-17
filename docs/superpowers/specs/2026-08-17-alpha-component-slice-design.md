@@ -8,7 +8,7 @@ This design is authoritative for that alpha sequence. `DESIGN.md` remains author
 
 ## Goals
 
-- Publish the proven universal action, input, progress, lifecycle-label, and icon patterns without product assumptions.
+- Publish the proven universal action, input, progress, and icon patterns without product assumptions.
 - Establish a small public component API that preserves native props, native semantics, and ref forwarding.
 - Keep all styling framework-independent, token-driven, opt-in, and free of global selectors.
 - Make the first public alpha reviewable in the canonical lab and verifiable from its packed registry artifact.
@@ -17,14 +17,14 @@ This design is authoritative for that alpha sequence. `DESIGN.md` remains author
 ## Non-goals
 
 - No router adapter, polymorphic `asChild` API, form library integration, validation policy, network state, loading orchestration, or product workflow.
-- No indeterminate progress bar, custom status labels, icon registry, icon size system, or speculative component abstraction.
+- No indeterminate progress bar, public lifecycle/status label component, icon registry, icon size system, or speculative component abstraction.
 - No Dialog, ActionMenu, Squircle, InlineCode, theme provider, advanced control, SuccessButton, or toast implementation.
 - No Tailwind requirement, reset, global element styling, Next.js import, consumer alias, or product type.
 - No Figma component publication in this slice. CLB-707 and CLB-709 own the canonical Figma representation.
 
 ## Delivery and branch structure
 
-CLB-694 and CLB-695 share semantic danger/status colors and package source organization, so they are not safe to begin as completely unrelated branches.
+CLB-694 and CLB-695 share the semantic danger pair and package source organization, so they are not safe to begin as completely unrelated branches.
 
 1. On the alpha integration branch, land and review a shared prelude containing this contract, the required semantic color vocabulary, and deterministic per-component CSS source assembly.
 2. Fork CLB-694 and CLB-695 worktrees from the reviewed prelude commit.
@@ -53,40 +53,31 @@ Source CSS is split for ownership and future growth:
 - `src/styles/components/button.css`
 - `src/styles/components/text-input.css`
 - `src/styles/components/progress-bar.css`
-- `src/styles/components/status-tag.css`
 
 `scripts/build-css.mjs` reads component files from a deterministic explicit manifest. It must not depend on filesystem enumeration order. Missing manifest files fail the build. The public output order is tokens, foundations, then component files in manifest order.
 
-Components live under `src/components/`, with focused modules for Button/ButtonLink, TextInput, ProgressBar, StatusTag, and icons. `src/index.ts` is the only public JavaScript barrel. Helpers remain private unless a documented consumer use requires promotion.
+Components live under `src/components/`, with focused modules for Button/ButtonLink, TextInput, ProgressBar, and icons. `src/index.ts` is the only public JavaScript barrel. Helpers remain private unless a documented consumer use requires promotion.
 
 ## Shared semantic colors
 
-CLB-694 requires danger colors for the destructive action variant. CLB-695 requires danger, warning, and beta colors for approved lifecycle states. The shared prelude therefore adds only these reusable pairs:
+CLB-694 requires danger colors for the destructive action variant. CLB-695 consumes the same pair for TextInput error presentation. The shared prelude therefore adds only this reusable pair:
 
 - `--base-color-danger`
 - `--base-color-danger-subtle`
-- `--base-color-warning`
-- `--base-color-warning-subtle`
-- `--base-color-beta`
-- `--base-color-beta-subtle`
 
 The light defaults preserve the proven `photos.me` palette:
 
 | Intent | Foreground | Subtle surface | Contrast |
 | --- | --- | --- | --- |
 | Danger | `#b42318` | `#fee4e2` | 5.45:1 |
-| Warning | `#8a5d00` | `#fff1c2` | 5.10:1 |
-| Beta | `#6941c6` | `#f0e9ff` | 5.61:1 |
 
 The dark defaults provide restrained, accessible equivalents:
 
 | Intent | Foreground | Subtle surface | Contrast |
 | --- | --- | --- | --- |
 | Danger | `#ff8a80` | `#33120f` | 7.45:1 |
-| Warning | `#f3bd5b` | `#2d220d` | 9.09:1 |
-| Beta | `#b9a1ff` | `#21183d` | 7.61:1 |
 
-The raw values are added as `--base-ref-color-*` properties and aliased by the semantic properties in both themes. Components consume only semantic properties. No success token is added; the approved product convention uses accent for success where needed, and this slice has no success-state component.
+The raw values are added as `--base-ref-color-*` properties and aliased by the semantic properties in both themes. Components consume only semantic properties. Warning and beta colors remain documentation-local because no reusable package component consumes them. No success token is added; the approved product convention uses accent for success where needed, and this slice has no success-state component.
 
 ## Button and ButtonLink
 
@@ -168,27 +159,6 @@ The type requires one accessible-name route:
 
 The three forms are mutually exclusive in the public TypeScript union. `aria-valuetext` remains available for consumers that need a formatted value announcement.
 
-## StatusTag
-
-```ts
-export type StatusTagStatus =
-  | "stable"
-  | "beta"
-  | "unstable"
-  | "deprecated";
-```
-
-`StatusTagProps` extends native span attributes except `children`, adds the required `status`, and forwards its ref to the `<span>`. Base renders the approved title-case labels `Stable`, `Beta`, `Unstable`, and `Deprecated`; custom label content is outside this lifecycle API.
-
-Mappings are:
-
-- stable: accent subtle / accent
-- beta: beta subtle / beta
-- unstable: warning subtle / warning
-- deprecated: danger subtle / danger
-
-Meaning is communicated by visible text as well as color. All pairs meet normal-text contrast in both default themes.
-
 ## Styling and public DOM contract
 
 Every component accepts `className` for consumer composition but renders stable package-owned classes prefixed with `base-`. Variant and size style hooks use explicit package-owned classes rather than product names or Tailwind output. Those class names, rendered native element, public props, and exported types are compatibility-sensitive API.
@@ -215,7 +185,6 @@ CLB-695 coverage includes:
 
 - TextInput ref/native props, error rendering, `aria-invalid`, and `aria-describedby` composition;
 - ProgressBar normalization, accessible-name type branches, ARIA values, native props, and ref;
-- StatusTag typed states, visible labels, semantic classes, native props, and ref;
 - light/dark token presence and contrast contracts;
 - automated accessibility checks for every meaningful state.
 
@@ -231,6 +200,8 @@ The component PRs identify their lab impact but do not duplicate or concurrently
 - keep component markup inside production components rather than copied lab implementations;
 - receive visual review at normal width, narrow width, 200 percent zoom, light/dark themes, keyboard focus, and reduced motion.
 
+CLB-716 also owns a documentation-only `StatusTag` used to label component lifecycle in the front-facing docs. It lives under `lab/src/`, is not exported from `@calebhill/base`, is excluded from the npm artifact, and uses lab-local warning/beta colors plus existing Base accent/danger colors. Its visible text communicates lifecycle meaning without relying on color. If an application later demonstrates a universal need for this API, promotion requires a new Base issue and public-contract review.
+
 Until CLB-716 lands, the missing canonical specimens are an explicit temporary divergence owned by CLB-716 and recorded on CLB-694/695 in Linear. No package publication may occur during that divergence.
 
 The canonical Figma library does not yet exist. CLB-707 and CLB-709 own representation of the approved anatomy, variants, states, variables, and accessibility annotations. The code-first alpha divergence is explicit and does not block CLB-705, but those Figma issues must reconcile against this contract rather than infer a different API.
@@ -239,7 +210,7 @@ The canonical Figma library does not yet exist. CLB-707 and CLB-709 own represen
 
 CLB-717 extends the existing real-tarball Vite fixture and package contracts after both component issues land.
 
-- The fixture imports every alpha runtime component/type path through documented public exports and imports the complete public stylesheet.
+- The fixture imports every consumable alpha runtime component/type path through documented public exports and imports the complete public stylesheet. It does not import the documentation-only StatusTag.
 - It renders representative alpha components without aliases, Tailwind, Next.js, Vercel modules, or source imports.
 - The packed artifact's runtime exports, declarations, CSS entries, side-effect declaration, and exact file list are asserted.
 - Forbidden dependencies and product strings fail CI.
@@ -249,7 +220,7 @@ CLB-716 and CLB-717 are independent after CLB-694/695 and may execute concurrent
 
 ## Changesets, publication, and consumers
 
-CLB-694 and CLB-695 each add a minor changeset describing their consumer-visible public API. The existing foundation changeset remains. CLB-705 owns prerelease mode, the exact first alpha version, the `next` dist-tag, trusted OIDC publication, provenance, rollback documentation, and registry verification. Published versions are never overwritten.
+CLB-694 and CLB-695 each add a minor changeset describing their consumer-visible public API. CLB-695's changeset names only TextInput and ProgressBar. The documentation-only StatusTag is not release-note material for package consumers. The existing foundation changeset remains. CLB-705 owns prerelease mode, the exact first alpha version, the `next` dist-tag, trusted OIDC publication, provenance, rollback documentation, and registry verification. Published versions are never overwritten.
 
 CLB-705 must verify the registry package by installing the exact published version into clean Vite and Next.js fixtures, checking exports/types/CSS/file list/provenance, and exercising the canonical lab build against the release candidate state.
 
