@@ -16,10 +16,6 @@ describe("public api", () => {
     expect(Object.keys(publicApi).sort()).toEqual(runtimeExports);
   });
 
-  it("keeps the shared prelude runtime surface foundation-only", () => {
-    expect(Object.keys(publicApi).sort()).toEqual(["BASE_THEME_ATTRIBUTE", "isBaseTheme"]);
-  });
-
   it("exposes the base theme attribute constant", () => {
     expect(publicApi.BASE_THEME_ATTRIBUTE).toBe("data-base-theme");
   });
