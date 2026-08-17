@@ -13,6 +13,10 @@ postcss.parse(tokenCss).walkDecls(/^--base-/, (declaration) => {
 
 const finePointerQuery = "(hover: hover) and (pointer: fine)";
 const productNames = /(?:photos(?:-me|\.me)?|calebhill(?:\.me)?)/i;
+const cssWideKeywords = new Set(["inherit", "initial", "revert", "revert-layer", "unset"]);
+const rawColorFunction =
+  /(?:^|[\s,(])(?:color|color-mix|device-cmyk|hsl|hsla|hwb|lab|lch|light-dark|oklab|oklch|rgb|rgba)\(/i;
+const rawHexColor = /#(?:[\da-f]{8}|[\da-f]{6}|[\da-f]{4}|[\da-f]{3})(?![\da-f])/i;
 const colorProperties = new Set([
   "background",
   "background-color",
@@ -23,6 +27,29 @@ const colorProperties = new Set([
   "stroke",
   "text-decoration-color",
 ]);
+const allowedTransparentDeclarations = new Set([
+  ".base-button|border|1px solid transparent",
+  ".base-button-text|background-color|transparent",
+  ".base-button-text-accent|background-color|transparent",
+]);
+
+function isNamedColor(identifier: string) {
+  if (cssWideKeywords.has(identifier.toLowerCase())) return false;
+
+  const probe = document.createElement("span").style;
+  probe.color = "";
+  probe.color = identifier;
+
+  return probe.color !== "";
+}
+
+function rawColorIn(value: string) {
+  if (rawHexColor.test(value) || rawColorFunction.test(value)) return true;
+
+  return [...value.matchAll(/[a-z][a-z-]*/gi)].some(([identifier]) =>
+    isNamedColor(identifier),
+  );
+}
 
 function rulesFor(selector: string) {
   const rules: Rule[] = [];
@@ -84,6 +111,17 @@ describe("Button CSS contract", () => {
       for (const reference of references) {
         expect(reference).toMatch(/^--base-/);
         expect(declaredBaseTokens.has(reference), `${reference} must be declared`).toBe(true);
+      }
+
+      if (rawColorIn(declaration.value)) {
+        const parent = declaration.parent;
+        expect(parent?.type).toBe("rule");
+        const selector = parent?.type === "rule" ? parent.selector : "";
+        const transparentKey = `${selector}|${declaration.prop}|${declaration.value}`;
+        expect(
+          allowedTransparentDeclarations.has(transparentKey),
+          `${selector} must not use a raw color in ${declaration.toString()}`,
+        ).toBe(true);
       }
 
       if (colorProperties.has(declaration.prop) && declaration.value !== "transparent") {
