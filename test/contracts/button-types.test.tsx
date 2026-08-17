@@ -49,6 +49,9 @@ const unnamedLink = <ButtonLink href="#x" size="icon"><MoreIcon /></ButtonLink>;
 // @ts-expect-error ButtonLink deliberately does not expose disabled
 const disabledLink = <ButtonLink href="#x" disabled>Unavailable</ButtonLink>;
 
+// @ts-expect-error ButtonLink deliberately does not expose aria-disabled
+const ariaDisabledLinkProps: ButtonLinkProps = { href: "#x", "aria-disabled": "true" };
+
 void nativeButton;
 void labeledIconButton;
 void nativeLink;
@@ -56,6 +59,7 @@ void labeledIconLink;
 void unnamedButton;
 void unnamedLink;
 void disabledLink;
+void ariaDisabledLinkProps;
 
 describe("button public types", () => {
   it("accepts valid native and labeled icon examples", () => {

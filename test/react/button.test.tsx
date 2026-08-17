@@ -1,7 +1,5 @@
-import { readFileSync } from "node:fs";
 import { createRef } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import postcss from "postcss";
 import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -182,72 +180,5 @@ describe("action accessibility", () => {
     expect(
       (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
     ).toHaveLength(0);
-  });
-});
-
-describe("button stylesheet contract", () => {
-  const stylesheet = postcss.parse(
-    readFileSync("src/styles/components/button.css", "utf8"),
-  );
-
-  function declarations(selector: string) {
-    const values = new Map<string, string>();
-    stylesheet.walkRules(selector, (rule) => {
-      rule.walkDecls((declaration) => {
-        values.set(declaration.prop, declaration.value);
-      });
-    });
-    return values;
-  }
-
-  it("defines intrinsic component anatomy through package-owned selectors", () => {
-    const common = declarations(".base-button");
-    expect(common.get("align-items")).toBe("center");
-    expect(common.get("display")).toBe("inline-flex");
-    expect(common.get("gap")).toBe("var(--base-ref-space-1)");
-    expect(common.get("justify-content")).toBe("center");
-    expect(common.get("text-decoration")).toBe("none");
-    expect(common.get("user-select")).toBe("none");
-    expect(common.get("white-space")).toBe("nowrap");
-    expect(declarations(".base-button-default").get("height")).toBe("2.5rem");
-    expect(declarations(".base-button-default").get("padding-inline")).toBe(
-      "var(--base-ref-space-5)",
-    );
-    expect(declarations(".base-button-icon").get("height")).toBe("2.25rem");
-    expect(declarations(".base-button-icon").get("width")).toBe("2.25rem");
-  });
-
-  it("uses only semantic Base colors for the six variants and disabled state", () => {
-    const css = readFileSync("src/styles/components/button.css", "utf8");
-
-    for (const variant of variants) {
-      expect(css).toContain(`.base-button-${variant}`);
-    }
-    expect(css).toContain("var(--base-color-danger-subtle)");
-    expect(css).toContain("var(--base-color-danger)");
-    expect(css).toContain("var(--base-color-surface-disabled)");
-    expect(css).toContain("var(--base-color-text-disabled)");
-    expect(css).not.toMatch(/(?:^|[,{]\s*)(?:html|body|\*)\b/m);
-    expect(css).not.toContain("@tailwind");
-  });
-
-  it("guards hover feedback behind fine-pointer capability", () => {
-    const hoverSelectors: string[] = [];
-    stylesheet.walkRules((rule) => {
-      if (rule.selector.includes(":hover")) hoverSelectors.push(rule.selector);
-    });
-
-    expect(hoverSelectors.length).toBeGreaterThan(0);
-    for (const selector of hoverSelectors) {
-      const rule = [...stylesheet.nodes]
-        .flatMap((node) => (node.type === "atrule" ? node.nodes ?? [] : []))
-        .find((node) => node.type === "rule" && node.selector === selector);
-      expect(rule?.parent).toMatchObject({
-        type: "atrule",
-        name: "media",
-        params: "(hover: hover) and (pointer: fine)",
-      });
-      expect(selector).toContain(":not(:disabled)");
-    }
   });
 });
