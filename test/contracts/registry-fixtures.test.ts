@@ -96,6 +96,13 @@ function replaceStylesheetImport(
   writeFileSync(sourcePath, source.replace(staticImport, replacement));
 }
 
+function fixtureRuntimeSource(
+  root: string,
+  name: keyof typeof fixtureDependencies,
+) {
+  return name === "vite-smoke" ? join(root, "src/main.tsx") : join(root, "app/page.tsx");
+}
+
 function readFixture(name: string) {
   const root = join(fixtureRoot, name);
   const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
@@ -299,6 +306,72 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
         const sourcePath =
           name === "vite-smoke" ? join(root, "src/main.tsx") : join(root, "app/layout.tsx");
         writeFileSync(sourcePath, '\nimport "@calebhill/base/tokens.css";\n', { flag: "a" });
+      }),
+    ).toThrow(/fixture Base imports/i);
+  });
+
+  it.each([
+    ["a dynamic import", 'void import("@calebhill/base/tokens.css");'],
+    ["a template-literal dynamic import", "void import(`@calebhill/base/tokens.css`);"],
+    ["an export-from declaration", 'export * from "@calebhill/base/tokens.css";'],
+    ["a require call", 'void require("@calebhill/base/tokens.css");'],
+    ["a module.require call", 'void module.require("@calebhill/base/tokens.css");'],
+    ["an import type expression", 'type BaseTokens = import("@calebhill/base/tokens.css");'],
+  ])("rejects %s while required imports remain intact", (_kind, bypass) => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        writeFileSync(
+          fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies),
+          `\n${bypass}\n`,
+          { flag: "a" },
+        );
+      }),
+    ).toThrow(/fixture Base imports/i);
+  });
+
+  it("rejects a Base import in a newly added reachable source file", () => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        const sourceDirectory = name === "vite-smoke" ? join(root, "src") : join(root, "app");
+        writeFileSync(
+          join(sourceDirectory, "extra.ts"),
+          'import "@calebhill/base/tokens.css";\nexport const extra = true;\n',
+        );
+        writeFileSync(fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies), '\nimport "./extra";\n', {
+          flag: "a",
+        });
+      }),
+    ).toThrow(/fixture Base imports/i);
+  });
+
+  it.each([
+    ["an ordinary string", 'const harmlessSpecifier = "@calebhill/base/tokens.css";'],
+    ["a comment", '// require("@calebhill/base/tokens.css");'],
+  ])("does not treat %s as a module reference", (_kind, harmless) => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        writeFileSync(
+          fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies),
+          `\n${harmless}\n`,
+          { flag: "a" },
+        );
+      }),
+    ).not.toThrow();
+  });
+
+  it("requires the approved root import to remain value-capable", () => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        const sourcePath = fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies);
+        const source = readFileSync(sourcePath, "utf8");
+        const rootImport = /import \{([\s\S]*?)\} from "@calebhill\/base";/;
+        const match = rootImport.exec(source);
+        if (!match) throw new Error("Expected fixture root import");
+        const typeOnlyNames = match[1].replace(/\btype\s+/g, "");
+        writeFileSync(
+          sourcePath,
+          source.replace(rootImport, `import type {${typeOnlyNames}} from "@calebhill/base";`),
+        );
       }),
     ).toThrow(/fixture Base imports/i);
   });

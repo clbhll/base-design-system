@@ -19,22 +19,24 @@ import ts from "typescript";
 import { assertPackageTarball } from "./assert-tarball-contents.mjs";
 
 const exactVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
-const expectedFixtureImports = [
+const expectedFixtureRuntimeImports = [
   "BASE_THEME_ATTRIBUTE",
-  "BaseTheme",
   "Button",
   "ButtonLink",
+  "MoreIcon",
+  "ProgressBar",
+  "TextInput",
+  "TrashIcon",
+  "isBaseTheme",
+].sort();
+const expectedFixtureTypeImports = [
+  "BaseTheme",
   "ButtonLinkProps",
   "ButtonProps",
   "ButtonSize",
   "ButtonVariant",
-  "MoreIcon",
-  "ProgressBar",
   "ProgressBarProps",
-  "TextInput",
   "TextInputProps",
-  "TrashIcon",
-  "isBaseTheme",
 ].sort();
 const fixtureContracts = {
   "next-smoke": {
@@ -42,10 +44,20 @@ const fixtureContracts = {
     devDependencies: ["@types/node", "@types/react", "@types/react-dom", "typescript"],
     imports: {
       "app/layout.tsx": [
-        { names: [], specifier: "@calebhill/base/styles.css" },
+        {
+          form: "static-side-effect",
+          specifier: "@calebhill/base/styles.css",
+          typeNames: [],
+          valueNames: [],
+        },
       ],
       "app/page.tsx": [
-        { names: expectedFixtureImports, specifier: "@calebhill/base" },
+        {
+          form: "static-named",
+          specifier: "@calebhill/base",
+          typeNames: expectedFixtureTypeImports,
+          valueNames: expectedFixtureRuntimeImports,
+        },
       ],
     },
   },
@@ -60,8 +72,18 @@ const fixtureContracts = {
     ],
     imports: {
       "src/main.tsx": [
-        { names: expectedFixtureImports, specifier: "@calebhill/base" },
-        { names: [], specifier: "@calebhill/base/styles.css" },
+        {
+          form: "static-named",
+          specifier: "@calebhill/base",
+          typeNames: expectedFixtureTypeImports,
+          valueNames: expectedFixtureRuntimeImports,
+        },
+        {
+          form: "static-side-effect",
+          specifier: "@calebhill/base/styles.css",
+          typeNames: [],
+          valueNames: [],
+        },
       ],
     },
   },
@@ -77,43 +99,133 @@ function readPackageManifest(packageRoot) {
   return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 }
 
-function readStaticBaseImports(sourcePath) {
+const fixtureCodeExtension = /\.(?:[cm]?[jt]sx?)$/;
+const ignoredFixtureDirectories = new Set([".next", "dist", "node_modules"]);
+
+function listFixtureCodeFiles(root, prefix = "") {
+  return readdirSync(root, { withFileTypes: true })
+    .flatMap((entry) => {
+      const relativePath = join(prefix, entry.name);
+      const path = join(root, entry.name);
+      if (entry.isDirectory()) {
+        return ignoredFixtureDirectories.has(entry.name)
+          ? []
+          : listFixtureCodeFiles(path, relativePath);
+      }
+      return fixtureCodeExtension.test(entry.name) ? [relativePath] : [];
+    })
+    .sort();
+}
+
+function isBaseSpecifier(value) {
+  return typeof value === "string" && value.startsWith("@calebhill/base");
+}
+
+function readFixtureBaseReferences(sourcePath, fixtureRelativePath) {
   const source = readFileSync(sourcePath, "utf8");
+  const scriptKind = /\.[cm]?tsx$/.test(sourcePath)
+    ? ts.ScriptKind.TSX
+    : /\.[cm]?jsx$/.test(sourcePath)
+      ? ts.ScriptKind.JSX
+      : /\.[cm]?js$/.test(sourcePath)
+        ? ts.ScriptKind.JS
+        : ts.ScriptKind.TS;
   const sourceFile = ts.createSourceFile(
     sourcePath,
     source,
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TSX,
+    scriptKind,
   );
+  const references = [];
 
-  return sourceFile.statements
-    .filter(ts.isImportDeclaration)
-    .flatMap((declaration) => {
-      if (!ts.isStringLiteral(declaration.moduleSpecifier)) return [];
-      const specifier = declaration.moduleSpecifier.text;
-      if (specifier !== "@calebhill/base" && !specifier.startsWith("@calebhill/base/")) {
-        return [];
+  function addReference(
+    form,
+    specifier,
+    { typeNames = [], valueNames = [] } = {},
+  ) {
+    if (!isBaseSpecifier(specifier)) return;
+    references.push({
+      file: fixtureRelativePath,
+      form,
+      specifier,
+      typeNames: [...typeNames].sort(),
+      valueNames: [...valueNames].sort(),
+    });
+  }
+
+  function visit(node) {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      const specifier = node.moduleSpecifier.text;
+      if (!node.importClause) {
+        addReference("static-side-effect", specifier);
+      } else if (node.importClause.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+        const elements = node.importClause.namedBindings.elements;
+        addReference("static-named", specifier, {
+          typeNames: elements
+            .filter((element) => node.importClause.isTypeOnly || element.isTypeOnly)
+            .map((element) => element.propertyName?.text ?? element.name.text),
+          valueNames: elements
+            .filter((element) => !node.importClause.isTypeOnly && !element.isTypeOnly)
+            .map((element) => element.propertyName?.text ?? element.name.text),
+        });
+      } else if (node.importClause.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings)) {
+        addReference("static-namespace", specifier, {
+          [node.importClause.isTypeOnly ? "typeNames" : "valueNames"]: [
+            node.importClause.namedBindings.name.text,
+          ],
+        });
+      } else if (node.importClause.name) {
+        addReference("static-default", specifier, {
+          [node.importClause.isTypeOnly ? "typeNames" : "valueNames"]: [
+            node.importClause.name.text,
+          ],
+        });
       }
-
-      if (!declaration.importClause) {
-        return [{ names: [], specifier }];
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      addReference("export-from", node.moduleSpecifier.text, {
+        [node.isTypeOnly ? "typeNames" : "valueNames"]:
+          node.exportClause && ts.isNamedExports(node.exportClause)
+            ? node.exportClause.elements.map((element) => element.propertyName?.text ?? element.name.text)
+            : ["*"],
+      });
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      node.moduleReference.expression &&
+      ts.isStringLiteral(node.moduleReference.expression)
+    ) {
+      addReference("import-equals", node.moduleReference.expression.text, {
+        [node.isTypeOnly ? "typeNames" : "valueNames"]: [node.name.text],
+      });
+    } else if (ts.isImportTypeNode(node)) {
+      const literal = ts.isLiteralTypeNode(node.argument) ? node.argument.literal : undefined;
+      if (literal && ts.isStringLiteral(literal)) {
+        addReference("import-type", literal.text);
       }
-
-      if (
-        declaration.importClause.name ||
-        !declaration.importClause.namedBindings ||
-        !ts.isNamedImports(declaration.importClause.namedBindings)
-      ) {
-        throw new Error(`Fixture Base import must use named exports only: ${sourcePath}`);
+    } else if (ts.isCallExpression(node) && node.arguments.length > 0) {
+      const argument = node.arguments[0];
+      if (ts.isStringLiteral(argument) || ts.isNoSubstitutionTemplateLiteral(argument)) {
+        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+          addReference("dynamic-import", argument.text);
+        } else if (
+          (ts.isIdentifier(node.expression) && node.expression.text === "require") ||
+          (ts.isPropertyAccessExpression(node.expression) &&
+            ts.isIdentifier(node.expression.expression) &&
+            ((node.expression.expression.text === "require" &&
+              node.expression.name.text === "resolve") ||
+              node.expression.name.text === "require"))
+        ) {
+          addReference("require", argument.text);
+        }
       }
+    }
 
-      const names = declaration.importClause.namedBindings.elements
-        .map((element) => element.propertyName?.text ?? element.name.text)
-        .sort();
-      return [{ names, specifier }];
-    })
-    .sort((left, right) => left.specifier.localeCompare(right.specifier));
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return references;
 }
 
 export function assertExactPackageSpec(packageSpec) {
@@ -183,13 +295,26 @@ export function assertFixtureTemplateContract(fixtureTemplateRoot, fixtureTempla
     }
   }
 
-  for (const [sourceFile, expectedImports] of Object.entries(contract.imports)) {
-    const actualImports = readStaticBaseImports(join(fixtureTemplateRoot, sourceFile));
-    if (JSON.stringify(actualImports) !== JSON.stringify(expectedImports)) {
-      throw new Error(
-        `${fixtureTemplate} fixture Base imports mismatch in ${sourceFile}.\nExpected: ${JSON.stringify(expectedImports)}\nActual: ${JSON.stringify(actualImports)}`,
-      );
-    }
+  const expectedReferences = Object.entries(contract.imports)
+    .flatMap(([file, imports]) => imports.map((entry) => ({ file, ...entry })))
+    .sort((left, right) =>
+      `${left.file}:${left.specifier}:${left.form}`.localeCompare(
+        `${right.file}:${right.specifier}:${right.form}`,
+      ),
+    );
+  const actualReferences = listFixtureCodeFiles(fixtureTemplateRoot)
+    .flatMap((file) =>
+      readFixtureBaseReferences(join(fixtureTemplateRoot, file), file),
+    )
+    .sort((left, right) =>
+      `${left.file}:${left.specifier}:${left.form}`.localeCompare(
+        `${right.file}:${right.specifier}:${right.form}`,
+      ),
+    );
+  if (JSON.stringify(actualReferences) !== JSON.stringify(expectedReferences)) {
+    throw new Error(
+      `${fixtureTemplate} fixture Base imports mismatch.\nExpected: ${JSON.stringify(expectedReferences)}\nActual: ${JSON.stringify(actualReferences)}`,
+    );
   }
 }
 
