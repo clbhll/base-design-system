@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const tarballAssertionModule = pathToFileURL(resolve("scripts/assert-tarball-contents.mjs")).href;
+const packedFixtureModule = pathToFileURL(resolve("scripts/test-packed-fixture.mjs")).href;
 
 function runTarballCheckWithMarker(env = process.env) {
   const markerRoot = mkdtempSync(join(tmpdir(), "base-tarball-marker-"));
@@ -23,6 +24,22 @@ function runTarballCheckWithMarker(env = process.env) {
         env,
         stdio: "inherit",
       }),
+    temporaryRoot: () => readFileSync(marker, "utf8"),
+  };
+}
+
+function runThrowingCallbackProbe(moduleUrl: string, functionName: string) {
+  const markerRoot = mkdtempSync(join(tmpdir(), "base-tarball-callback-"));
+  const marker = join(markerRoot, "temporary-root.txt");
+  const script = [
+    'import { writeFileSync } from "node:fs";',
+    `import { ${functionName} } from ${JSON.stringify(moduleUrl)};`,
+    `${functionName}({ onTemporaryRootCreated: (root) => { writeFileSync(${JSON.stringify(marker)}, root); throw new Error("callback failure"); } });`,
+  ].join("\n");
+
+  return {
+    markerRoot,
+    run: () => execFileSync("node", ["--input-type=module", "--eval", script], { stdio: "ignore" }),
     temporaryRoot: () => readFileSync(marker, "utf8"),
   };
 }
@@ -54,6 +71,20 @@ describe("tarball contents", () => {
       expect(existsSync(check.temporaryRoot())).toBe(false);
     } finally {
       rmSync(shimRoot, { force: true, recursive: true });
+      rmSync(check.markerRoot, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    ["tarball assertion", tarballAssertionModule, "runTarballCheck"],
+    ["packed fixture", packedFixtureModule, "runPackedFixture"],
+  ])("cleans its temporary directory when the %s callback throws", (_name, moduleUrl, functionName) => {
+    const check = runThrowingCallbackProbe(moduleUrl, functionName);
+
+    try {
+      expect(check.run).toThrow();
+      expect(existsSync(check.temporaryRoot())).toBe(false);
+    } finally {
       rmSync(check.markerRoot, { force: true, recursive: true });
     }
   });

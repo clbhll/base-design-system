@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import postcss from "postcss";
 
 export const expectedTarballFiles = [
   "package/LICENSE",
@@ -40,9 +41,13 @@ export const expectedDeclarationNames = [
   "ProgressBarProps",
   "TrashIcon",
   "isBaseTheme",
-];
+].sort();
 
-export const expectedExports = [".", "./styles.css", "./tokens.css"].sort();
+export const expectedExports = {
+  ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
+  "./styles.css": "./dist/styles.css",
+  "./tokens.css": "./dist/tokens.css",
+};
 export const expectedSideEffects = ["./dist/styles.css", "./dist/tokens.css"].sort();
 export const expectedPeerDependencies = ["react@>=19.0.0", "react-dom@>=19.0.0"].sort();
 
@@ -51,18 +56,22 @@ const forbiddenContent = [
   [/~\//, "application alias ~/"],
   [/"next"\s*:/i, "Next.js"],
   [/(?:from|import\()\s*["']next(?:\/|["'])/i, "Next.js"],
+  [/\bnext\/[a-z0-9._-]+/i, "Next.js"],
   [/@vercel\//i, "Vercel"],
+  [/\bvercel\b/i, "Vercel"],
   [/photos-me/i, "photos-me"],
   [/calebhill\.me/i, "calebhill.me"],
   [/status[-_]?tag/i, "StatusTag"],
   [/@tailwind\b/i, "Tailwind directive"],
   [/@import\s+(?:url\()?\s*["']tailwindcss(?:["']|\))/i, "Tailwind import"],
   [/tailwind\.config(?:\.[cm]?[jt]s)?/i, "Tailwind config"],
+  [/\btailwindcss\b/i, "Tailwind"],
   [/--lab-status-(?:warning|beta)-/i, "lab warning/beta variable"],
   [/\blab-status-(?:warning|beta)\b/i, "lab warning/beta content"],
-  [/(?:\.\.\/|\.\/)+src\//, "source path"],
-  [/sourceMappingURL\s*=/i, "source map"],
   [/@calebhill\/base\/(?:src|dist)\//i, "source package path"],
+  [/(?:\.\.\/|\.\/)+src\//, "source path"],
+  [/\bsrc\/(?:components|styles)\//i, "source path"],
+  [/sourceMappingURL\s*=/i, "source map"],
   [/--base-(?:color-)?warning\b/i, "public warning variable"],
   [/--base-(?:color-)?beta\b/i, "public beta variable"],
 ];
@@ -71,6 +80,33 @@ function assertSame(actual, expected, label) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(
       `${label} mismatch.\nExpected: ${expected.join(", ")}\nActual: ${actual.join(", ")}`,
+    );
+  }
+}
+
+function normalizeValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, normalizeValue(entry)]),
+    );
+  }
+
+  return value;
+}
+
+function assertExactValue(actual, expected, label) {
+  const normalizedActual = normalizeValue(actual);
+  const normalizedExpected = normalizeValue(expected);
+
+  if (JSON.stringify(normalizedActual) !== JSON.stringify(normalizedExpected)) {
+    throw new Error(
+      `${label} mismatch.\nExpected: ${JSON.stringify(normalizedExpected)}\nActual: ${JSON.stringify(normalizedActual)}`,
     );
   }
 }
@@ -91,8 +127,10 @@ function readPackageFile(packageRoot, path) {
 
 function assertForbiddenContent(files) {
   for (const [fileName, content] of Object.entries(files)) {
+    const scannedContent = fileName === "dist/index.js" ? content.replace(/^\/\/ src\/[^\r\n]+$/gm, "") : content;
+
     for (const [pattern, label] of forbiddenContent) {
-      if (pattern.test(content)) {
+      if (pattern.test(scannedContent)) {
         throw new Error(`Forbidden packed content: ${label} in ${fileName}`);
       }
     }
@@ -100,13 +138,28 @@ function assertForbiddenContent(files) {
 }
 
 function assertDeclarationSurface(declarations) {
-  const missing = expectedDeclarationNames.filter(
-    (name) => !new RegExp(`\\b${name}\\b`).test(declarations),
-  );
+  const names = new Set();
+  const exportedDeclaration = /^export\s+(?:declare\s+)?(?:const|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/gm;
+  const exportedList = /^export\s*{([\s\S]*?)};?$/gm;
 
-  if (missing.length > 0) {
-    throw new Error(`Packed declarations are missing: ${missing.join(", ")}`);
+  for (const match of declarations.matchAll(exportedDeclaration)) {
+    names.add(match[1]);
   }
+
+  for (const match of declarations.matchAll(exportedList)) {
+    for (const entry of match[1].split(",")) {
+      const exportedName = entry
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/)
+        .at(-1);
+      if (exportedName) {
+        names.add(exportedName);
+      }
+    }
+  }
+
+  assertSame([...names].sort(), expectedDeclarationNames, "Packed declaration exports");
 }
 
 function assertPackageMetadata(packageJson) {
@@ -126,18 +179,61 @@ function assertPackageMetadata(packageJson) {
 }
 
 function assertRuntimeDependencies(packageJson) {
-  if (packageJson.dependencies !== undefined) {
+  const runtimeChannels = [
+    "dependencies",
+    "optionalDependencies",
+    "bundledDependencies",
+    "bundleDependencies",
+    "peerDependenciesMeta",
+  ];
+  const presentChannels = runtimeChannels.filter((channel) => Object.hasOwn(packageJson, channel));
+
+  if (presentChannels.length > 0) {
     throw new Error(
-      `Packed runtime dependencies mismatch. Expected: absent\nActual: ${Object.keys(packageJson.dependencies).sort().join(", ") || "present"}`,
+      `Packed runtime dependencies mismatch. Expected absent channels: ${runtimeChannels.join(", ")}\nActual: ${presentChannels.join(", ")}`,
     );
   }
 }
 
 function assertCssContract(tokens, styles) {
-  const componentClasses = [".base-button", ".base-text-input", ".base-progress-bar"];
+  const allowedTokenSelectors = new Set([
+    ":root",
+    '[data-base-theme="light"]',
+    '[data-base-theme="dark"]',
+  ]);
+  const tokenRoot = postcss.parse(tokens);
 
-  if (!/:root/.test(tokens) || componentClasses.some((className) => tokens.includes(className))) {
-    throw new Error("tokens.css must remain token-only");
+  const assertTokenRule = (rule) => {
+    if (!rule.selectors || rule.selectors.some((selector) => !allowedTokenSelectors.has(selector))) {
+      throw new Error("tokens.css must remain token-only: selectors must be root or Base theme selectors");
+    }
+
+    if (rule.nodes?.some((node) => node.type !== "decl" || !node.prop.startsWith("--base-"))) {
+      throw new Error("tokens.css must remain token-only: declarations must be --base-* custom properties");
+    }
+  };
+
+  for (const node of tokenRoot.nodes ?? []) {
+    if (node.type === "comment") {
+      continue;
+    }
+
+    if (node.type === "rule") {
+      assertTokenRule(node);
+      continue;
+    }
+
+    if (node.type === "atrule" && node.name === "media" && node.params === "(prefers-reduced-motion: reduce)") {
+      for (const child of node.nodes ?? []) {
+        if (child.type !== "rule") {
+          throw new Error("tokens.css must remain token-only: media blocks may contain token rules only");
+        }
+        assertTokenRule(child);
+      }
+      continue;
+    }
+
+    throw new Error("tokens.css must remain token-only: only root or Base theme token rules are allowed");
   }
 
   const missingComponents = [
@@ -174,7 +270,7 @@ export async function assertPackedPackage(packageRoot) {
   const runtimeModule = await import(pathToFileURL(join(packageRoot, "dist/index.js")).href);
   assertSame(Object.keys(runtimeModule).sort(), expectedRuntimeExports, "Packed runtime exports");
   assertDeclarationSurface(declarations);
-  assertSame(Object.keys(packageJson.exports ?? {}).sort(), expectedExports, "Packed package exports");
+  assertExactValue(packageJson.exports, expectedExports, "Packed package exports");
   assertSame([...(packageJson.sideEffects ?? [])].sort(), expectedSideEffects, "Packed CSS side effects");
   assertCssContract(tokens, styles);
 }
@@ -187,9 +283,9 @@ export async function runTarballCheck({
   const tempParent = join(resolvedPackageRoot, ".tmp");
   mkdirSync(tempParent, { recursive: true });
   const tempRoot = mkdtempSync(join(tempParent, "tarball-check-"));
-  onTemporaryRootCreated?.(tempRoot);
 
   try {
+    onTemporaryRootCreated?.(tempRoot);
     execFileSync("pnpm", ["pack", "--pack-destination", tempRoot], {
       cwd: resolvedPackageRoot,
       stdio: "inherit",

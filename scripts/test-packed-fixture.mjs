@@ -12,9 +12,9 @@ export function runPackedFixture({
   mkdirSync(tempParent, { recursive: true });
   const tempRoot = mkdtempSync(join(tempParent, "packed-fixture-"));
   const runRoot = resolve(tempRoot, "run");
-  onTemporaryRootCreated?.(tempRoot);
 
   try {
+    onTemporaryRootCreated?.(tempRoot);
     execFileSync("pnpm", ["pack", "--pack-destination", tempRoot], { cwd: root, stdio: "inherit" });
 
     const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
