@@ -108,7 +108,7 @@ function listFixtureCodeFiles(root, prefix = "") {
       const relativePath = join(prefix, entry.name);
       const path = join(root, entry.name);
       if (entry.isDirectory()) {
-        return ignoredFixtureDirectories.has(entry.name)
+        return prefix === "" && ignoredFixtureDirectories.has(entry.name)
           ? []
           : listFixtureCodeFiles(path, relativePath);
       }
@@ -118,7 +118,10 @@ function listFixtureCodeFiles(root, prefix = "") {
 }
 
 function isBaseSpecifier(value) {
-  return typeof value === "string" && value.startsWith("@calebhill/base");
+  return (
+    typeof value === "string" &&
+    (value === "@calebhill/base" || value.startsWith("@calebhill/base/"))
+  );
 }
 
 function readFixtureBaseReferences(sourcePath, fixtureRelativePath) {
@@ -161,17 +164,26 @@ function readFixtureBaseReferences(sourcePath, fixtureRelativePath) {
         addReference("static-side-effect", specifier);
       } else if (node.importClause.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
         const elements = node.importClause.namedBindings.elements;
-        addReference("static-named", specifier, {
-          typeNames: elements
+        const defaultName = node.importClause.name?.text;
+        addReference(defaultName ? "static-default-named" : "static-named", specifier, {
+          typeNames: [
+            ...(defaultName && node.importClause.isTypeOnly ? [defaultName] : []),
+            ...elements
             .filter((element) => node.importClause.isTypeOnly || element.isTypeOnly)
             .map((element) => element.propertyName?.text ?? element.name.text),
-          valueNames: elements
+          ],
+          valueNames: [
+            ...(defaultName && !node.importClause.isTypeOnly ? [defaultName] : []),
+            ...elements
             .filter((element) => !node.importClause.isTypeOnly && !element.isTypeOnly)
             .map((element) => element.propertyName?.text ?? element.name.text),
+          ],
         });
       } else if (node.importClause.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings)) {
-        addReference("static-namespace", specifier, {
+        const defaultName = node.importClause.name?.text;
+        addReference(defaultName ? "static-default-namespace" : "static-namespace", specifier, {
           [node.importClause.isTypeOnly ? "typeNames" : "valueNames"]: [
+            ...(defaultName ? [defaultName] : []),
             node.importClause.namedBindings.name.text,
           ],
         });
@@ -205,10 +217,18 @@ function readFixtureBaseReferences(sourcePath, fixtureRelativePath) {
       }
     } else if (ts.isCallExpression(node) && node.arguments.length > 0) {
       const argument = node.arguments[0];
-      if (ts.isStringLiteral(argument) || ts.isNoSubstitutionTemplateLiteral(argument)) {
-        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        if (ts.isStringLiteral(argument) || ts.isNoSubstitutionTemplateLiteral(argument)) {
           addReference("dynamic-import", argument.text);
-        } else if (
+        } else if (ts.isTemplateExpression(argument)) {
+          const basePrefix = [argument.head.text, argument.head.rawText].find(isBaseSpecifier);
+          if (basePrefix) addReference("dynamic-import-expression", basePrefix);
+        }
+      } else if (
+        ts.isStringLiteral(argument) ||
+        ts.isNoSubstitutionTemplateLiteral(argument)
+      ) {
+        if (
           (ts.isIdentifier(node.expression) && node.expression.text === "require") ||
           (ts.isPropertyAccessExpression(node.expression) &&
             ts.isIdentifier(node.expression.expression) &&

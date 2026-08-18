@@ -313,6 +313,14 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
   it.each([
     ["a dynamic import", 'void import("@calebhill/base/tokens.css");'],
     ["a template-literal dynamic import", "void import(`@calebhill/base/tokens.css`);"],
+    [
+      "a template-expression dynamic import",
+      'const basePart = "tokens.css"; void import(`@calebhill/base/${basePart}`);',
+    ],
+    [
+      "an escaped cooked template-expression dynamic import",
+      'const basePart = "tokens.css"; void import(`@calebhill/\\x62ase/${basePart}`);',
+    ],
     ["an export-from declaration", 'export * from "@calebhill/base/tokens.css";'],
     ["a require call", 'void require("@calebhill/base/tokens.css");'],
     ["a module.require call", 'void module.require("@calebhill/base/tokens.css");'],
@@ -344,6 +352,44 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
     ).toThrow(/fixture Base imports/i);
   });
 
+  it.each(["dist", ".next", "node_modules"])(
+    "rejects a Base import in reachable nested %s source",
+    (directory) => {
+      expect(() =>
+        mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+          const sourceDirectory = name === "vite-smoke" ? join(root, "src") : join(root, "app");
+          const nestedDirectory = join(sourceDirectory, directory);
+          mkdirSync(nestedDirectory, { recursive: true });
+          writeFileSync(
+            join(nestedDirectory, "extra.ts"),
+            'import "@calebhill/base/tokens.css";\nexport const extra = true;\n',
+          );
+          writeFileSync(
+            fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies),
+            `\nimport "./${directory}/extra";\n`,
+            { flag: "a" },
+          );
+        }),
+      ).toThrow(/fixture Base imports/i);
+    },
+  );
+
+  it.each(["dist", ".next", "node_modules"])(
+    "ignores fixture-root generated %s output",
+    (directory) => {
+      expect(() =>
+        mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+          const generatedDirectory = join(root, directory);
+          mkdirSync(generatedDirectory, { recursive: true });
+          writeFileSync(
+            join(generatedDirectory, "generated.ts"),
+            'import "@calebhill/base/tokens.css";\n',
+          );
+        }),
+      ).not.toThrow();
+    },
+  );
+
   it.each([
     ["an ordinary string", 'const harmlessSpecifier = "@calebhill/base/tokens.css";'],
     ["a comment", '// require("@calebhill/base/tokens.css");'],
@@ -374,6 +420,38 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
         );
       }),
     ).toThrow(/fixture Base imports/i);
+  });
+
+  it.each([
+    ["combined default and named", 'import BaseDefault, $1 from "@calebhill/base";'],
+    ["default-only", 'import BaseDefault from "@calebhill/base";'],
+    ["namespace-only", 'import * as BaseNamespace from "@calebhill/base";'],
+    [
+      "combined default and namespace",
+      'import BaseDefault, * as BaseNamespace from "@calebhill/base";',
+    ],
+  ])("rejects a %s root import", (_kind, replacement) => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        const sourcePath = fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies);
+        const source = readFileSync(sourcePath, "utf8");
+        const rootImport = /import (\{[\s\S]*?\}) from "@calebhill\/base";/;
+        if (!rootImport.test(source)) throw new Error("Expected fixture root import");
+        writeFileSync(sourcePath, source.replace(rootImport, replacement));
+      }),
+    ).toThrow(/fixture Base imports/i);
+  });
+
+  it("does not classify a neighboring package name as Base", () => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        writeFileSync(
+          fixtureRuntimeSource(root, name as keyof typeof fixtureDependencies),
+          '\nimport "@calebhill/baseball";\n',
+          { flag: "a" },
+        );
+      }),
+    ).not.toThrow();
   });
 
   it.each([
