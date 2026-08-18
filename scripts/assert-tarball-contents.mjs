@@ -44,6 +44,7 @@ export const expectedDeclarationNames = [
 
 export const expectedExports = [".", "./styles.css", "./tokens.css"].sort();
 export const expectedSideEffects = ["./dist/styles.css", "./dist/tokens.css"].sort();
+export const expectedPeerDependencies = ["react@>=19.0.0", "react-dom@>=19.0.0"].sort();
 
 const forbiddenContent = [
   [/@\//, "application alias @/"],
@@ -54,6 +55,14 @@ const forbiddenContent = [
   [/photos-me/i, "photos-me"],
   [/calebhill\.me/i, "calebhill.me"],
   [/status[-_]?tag/i, "StatusTag"],
+  [/@tailwind\b/i, "Tailwind directive"],
+  [/@import\s+(?:url\()?\s*["']tailwindcss(?:["']|\))/i, "Tailwind import"],
+  [/tailwind\.config(?:\.[cm]?[jt]s)?/i, "Tailwind config"],
+  [/--lab-status-(?:warning|beta)-/i, "lab warning/beta variable"],
+  [/\blab-status-(?:warning|beta)\b/i, "lab warning/beta content"],
+  [/(?:\.\.\/|\.\/)+src\//, "source path"],
+  [/sourceMappingURL\s*=/i, "source map"],
+  [/@calebhill\/base\/(?:src|dist)\//i, "source package path"],
   [/--base-(?:color-)?warning\b/i, "public warning variable"],
   [/--base-(?:color-)?beta\b/i, "public beta variable"],
 ];
@@ -100,6 +109,30 @@ function assertDeclarationSurface(declarations) {
   }
 }
 
+function assertPackageMetadata(packageJson) {
+  if (packageJson.name !== "@calebhill/base") {
+    throw new Error(`Packed package name mismatch. Expected: @calebhill/base\nActual: ${packageJson.name}`);
+  }
+
+  if (packageJson.type !== "module") {
+    throw new Error(`Packed package module type mismatch. Expected: module\nActual: ${packageJson.type}`);
+  }
+
+  const actualPeers = Object.entries(packageJson.peerDependencies ?? {})
+    .map(([name, range]) => `${name}@${range}`)
+    .sort();
+  assertSame(actualPeers, expectedPeerDependencies, "Packed peer dependencies");
+
+}
+
+function assertRuntimeDependencies(packageJson) {
+  if (packageJson.dependencies !== undefined) {
+    throw new Error(
+      `Packed runtime dependencies mismatch. Expected: absent\nActual: ${Object.keys(packageJson.dependencies).sort().join(", ") || "present"}`,
+    );
+  }
+}
+
 function assertCssContract(tokens, styles) {
   const componentClasses = [".base-button", ".base-text-input", ".base-progress-bar"];
 
@@ -129,12 +162,7 @@ export async function assertPackedPackage(packageRoot) {
   const tokens = readPackageFile(packageRoot, "dist/tokens.css");
   const styles = readPackageFile(packageRoot, "dist/styles.css");
 
-  const runtimeModule = await import(pathToFileURL(join(packageRoot, "dist/index.js")).href);
-  assertSame(Object.keys(runtimeModule).sort(), expectedRuntimeExports, "Packed runtime exports");
-  assertDeclarationSurface(declarations);
-  assertSame(Object.keys(packageJson.exports ?? {}).sort(), expectedExports, "Packed package exports");
-  assertSame([...(packageJson.sideEffects ?? [])].sort(), expectedSideEffects, "Packed CSS side effects");
-  assertCssContract(tokens, styles);
+  assertPackageMetadata(packageJson);
   assertForbiddenContent({
     "package.json": JSON.stringify(packageJson),
     "dist/index.js": source,
@@ -142,6 +170,13 @@ export async function assertPackedPackage(packageRoot) {
     "dist/tokens.css": tokens,
     "dist/styles.css": styles,
   });
+  assertRuntimeDependencies(packageJson);
+  const runtimeModule = await import(pathToFileURL(join(packageRoot, "dist/index.js")).href);
+  assertSame(Object.keys(runtimeModule).sort(), expectedRuntimeExports, "Packed runtime exports");
+  assertDeclarationSurface(declarations);
+  assertSame(Object.keys(packageJson.exports ?? {}).sort(), expectedExports, "Packed package exports");
+  assertSame([...(packageJson.sideEffects ?? [])].sort(), expectedSideEffects, "Packed CSS side effects");
+  assertCssContract(tokens, styles);
 }
 
 export async function runTarballCheck({

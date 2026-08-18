@@ -9,7 +9,10 @@ const tarballAssertionScript = resolve("scripts/assert-tarball-contents.mjs");
 interface ExtractedPackageManifest {
   dependencies?: Record<string, string>;
   exports: Record<string, unknown>;
+  name: string;
+  peerDependencies: Record<string, string>;
   sideEffects: string[];
+  type: string;
 }
 
 function readExtractedPackageManifest(packageJsonPath: string): ExtractedPackageManifest {
@@ -113,7 +116,11 @@ describe("packed package contract", () => {
   it("rejects a runtime export outside the approved alpha surface", () => {
     expect(() =>
       mutatePackage((root) => {
-        writeFileSync(join(root, "dist/index.js"), "export const StatusTag = null;\n", { flag: "a" });
+        writeFileSync(
+          join(root, "dist/index.js"),
+          "export const UnexpectedRuntimeExport = null;\n",
+          { flag: "a" },
+        );
       }),
     ).toThrow(/runtime exports/i);
   });
@@ -192,6 +199,82 @@ describe("packed package contract", () => {
         writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
       }),
     ).toThrow(/forbidden packed content.*next/i);
+  });
+
+  it.each([
+    ["a Tailwind directive", "dist/styles.css", "\n@tailwind utilities;\n", /Tailwind directive/i],
+    ["a Tailwind import", "dist/tokens.css", '\n@import "tailwindcss";\n', /Tailwind import/i],
+    ["a Tailwind config reference", "dist/index.d.ts", "\n// tailwind.config.ts\n", /Tailwind config/i],
+    [
+      "a lab warning variable",
+      "dist/tokens.css",
+      "\n:root { --lab-status-warning-background: orange; }\n",
+      /lab warning\/beta variable/i,
+    ],
+    ["lab beta content", "dist/index.js", "\n// lab-status-beta\n", /lab warning\/beta content/i],
+    [
+      "a relative source path",
+      "dist/index.d.ts",
+      '\nexport * from "../../src/components/button";\n',
+      /source path/i,
+    ],
+    ["a source map reference", "dist/index.js", "\n//# sourceMappingURL=index.js.map\n", /source map/i],
+    [
+      "a source package path",
+      "dist/index.d.ts",
+      '\nimport type {} from "@calebhill/base/src/components/button";\n',
+      /source package path/i,
+    ],
+  ])("rejects %s from the packed artifact", (_name, file, content, expectedError) => {
+    expect(() =>
+      mutatePackage((root) => {
+        writeFileSync(join(root, file), content, { flag: "a" });
+      }),
+    ).toThrow(expectedError);
+  });
+
+  it("rejects a package name outside the approved identity", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const packageJsonPath = join(root, "package.json");
+        const packageJson = readExtractedPackageManifest(packageJsonPath);
+        packageJson.name = "@calebhill/other";
+        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      }),
+    ).toThrow(/package name/i);
+  });
+
+  it("rejects a non-ESM package module type", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const packageJsonPath = join(root, "package.json");
+        const packageJson = readExtractedPackageManifest(packageJsonPath);
+        packageJson.type = "commonjs";
+        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      }),
+    ).toThrow(/module type/i);
+  });
+
+  it("rejects a peer dependency range outside the approved React contract", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const packageJsonPath = join(root, "package.json");
+        const packageJson = readExtractedPackageManifest(packageJsonPath);
+        packageJson.peerDependencies.react = "^18.0.0";
+        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      }),
+    ).toThrow(/peer dependencies/i);
+  });
+
+  it("rejects an arbitrary runtime dependency", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const packageJsonPath = join(root, "package.json");
+        const packageJson = readExtractedPackageManifest(packageJsonPath);
+        packageJson.dependencies = { "tiny-invariant": "1.3.3" };
+        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      }),
+    ).toThrow(/runtime dependencies/i);
   });
 
   it("rejects an unexpected packed tarball file", () => {
