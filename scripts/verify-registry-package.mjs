@@ -176,10 +176,19 @@ export function assertProvenanceAttestations({
 
 export async function retryRegistryLookup(
   operation,
+  options = {},
+) {
+  return retryRegistryOperation("Registry lookup", operation, options);
+}
+
+async function retryRegistryOperation(
+  label,
+  operation,
   {
     attempts = 6,
     delayMs = 10_000,
     delay = (milliseconds) => new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds)),
+    shouldRetry = () => true,
   } = {},
 ) {
   if (!Number.isInteger(attempts) || attempts < 1) {
@@ -191,10 +200,12 @@ export async function retryRegistryLookup(
       return await operation();
     } catch (error) {
       lastError = error;
+      if (!shouldRetry(error)) throw error;
       if (attempt < attempts) await delay(delayMs);
     }
   }
-  throw lastError;
+  const detail = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`${label} failed after ${attempts} attempts: ${detail}`, { cause: lastError });
 }
 
 async function fetchJson(url) {
@@ -222,10 +233,8 @@ async function downloadTarball(url) {
 }
 
 function verifyAuditSignatures(root, version) {
-  const auditRoot = join(root, "signature-audit");
-  mkdirSync(auditRoot);
   writeFileSync(
-    join(auditRoot, "package.json"),
+    join(root, "package.json"),
     `${JSON.stringify(
       {
         name: "base-registry-signature-audit",
@@ -240,12 +249,27 @@ function verifyAuditSignatures(root, version) {
   execFileSync(
     "npm",
     ["install", "--ignore-scripts", "--no-audit", "--no-fund", `--registry=${registryOrigin}/`],
-    { cwd: auditRoot, stdio: "inherit" },
+    { cwd: root, stdio: "inherit" },
   );
   execFileSync("npm", ["audit", "signatures", `--registry=${registryOrigin}/`], {
-    cwd: auditRoot,
+    cwd: root,
     stdio: "inherit",
   });
+}
+
+const deterministicFixtureError = /^(?:Base fixture package spec|Candidate package identity|Expected fixture|Forbidden packed content|Installed package (?:file parity|identity|path)|Packed |styles\.css |tokens\.css |Unknown installed fixture|(?:next|vite)-smoke fixture )/i;
+
+function shouldRetryFixture(error) {
+  return !(error instanceof Error && deterministicFixtureError.test(error.message));
+}
+
+async function inAttemptRoot(root, prefix, operation) {
+  const attemptRoot = mkdtempSync(join(root, `${prefix}-attempt-`));
+  try {
+    return await operation(attemptRoot);
+  } finally {
+    rmSync(attemptRoot, { force: true, recursive: true });
+  }
 }
 
 export async function verifyRegistryPackage({
@@ -257,12 +281,13 @@ export async function verifyRegistryPackage({
   expectedCommit,
   download = downloadTarball,
   validateTarball = assertPackageTarball,
-  runFixture = async (fixtureTemplate, exactVersion, tarball, root) =>
+  runFixture = async (fixtureTemplate, exactVersion, tarball, root, attemptRoot) =>
     runInstalledFixture({
       fixtureTemplate,
       packageRoot: root,
       packageSpec: exactVersion,
       expectedTarball: tarball,
+      temporaryParent: attemptRoot,
     }),
   auditSignatures = verifyAuditSignatures,
   attempts,
@@ -296,9 +321,25 @@ export async function verifyRegistryPackage({
     writeFileSync(tarball, state.bytes);
     await validateTarball(tarball);
     for (const fixtureTemplate of ["vite-smoke", "next-smoke"]) {
-      await runFixture(fixtureTemplate, version, tarball, root);
+      await retryRegistryOperation(
+        `${fixtureTemplate} registry fixture`,
+        () => inAttemptRoot(
+          tempRoot,
+          fixtureTemplate,
+          (attemptRoot) => runFixture(fixtureTemplate, version, tarball, root, attemptRoot),
+        ),
+        { attempts, delay, shouldRetry: shouldRetryFixture },
+      );
     }
-    auditSignatures(tempRoot, version);
+    await retryRegistryOperation(
+      "npm signature audit",
+      () => inAttemptRoot(
+        tempRoot,
+        "signature-audit",
+        (attemptRoot) => auditSignatures(attemptRoot, version),
+      ),
+      { attempts, delay },
+    );
     return { version, integrity: state.metadata.dist.integrity };
   } finally {
     rmSync(tempRoot, { force: true, recursive: true });

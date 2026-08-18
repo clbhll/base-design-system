@@ -564,6 +564,189 @@ describe("exact registry artifact verification", () => {
     }
   });
 
+  it("retries each exact-version fixture in a fresh cleaned attempt root", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
+    const state = registryMetadata();
+    const calls = new Map<string, number>();
+    const attemptRoots: string[] = [];
+
+    try {
+      await verifyRegistryPackage({
+        version,
+        packageRoot,
+        lookup: () => Promise.resolve({
+          metadata: state.metadata,
+          packageDocument: state.packageDocument,
+        }),
+        fetchAttestations: () => Promise.resolve(provenanceAttestations()),
+        expectedCommit: "a".repeat(40),
+        download: () => Promise.resolve(state.bytes),
+        validateTarball: () => undefined,
+        runFixture: (fixture, requestedVersion, _tarball, _root, attemptRoot) => {
+          expect(requestedVersion).toBe(version);
+          expect(existsSync(attemptRoot)).toBe(true);
+          writeFileSync(join(attemptRoot, "attempt-marker"), fixture);
+          attemptRoots.push(attemptRoot);
+          const call = (calls.get(fixture) ?? 0) + 1;
+          calls.set(fixture, call);
+          if (call === 1) throw new Error(`${fixture} registry install not propagated`);
+        },
+        auditSignatures: () => undefined,
+        attempts: 2,
+        delay: () => Promise.resolve(),
+      });
+
+      expect(Object.fromEntries(calls)).toEqual({ "vite-smoke": 2, "next-smoke": 2 });
+      expect(new Set(attemptRoots).size).toBe(4);
+      expect(attemptRoots.every((root) => !existsSync(root))).toBe(true);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("retries the signature audit in a fresh cleaned attempt root", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
+    const state = registryMetadata();
+    const attemptRoots: string[] = [];
+
+    try {
+      await verifyRegistryPackage({
+        version,
+        packageRoot,
+        lookup: () => Promise.resolve({
+          metadata: state.metadata,
+          packageDocument: state.packageDocument,
+        }),
+        fetchAttestations: () => Promise.resolve(provenanceAttestations()),
+        expectedCommit: "a".repeat(40),
+        download: () => Promise.resolve(state.bytes),
+        validateTarball: () => undefined,
+        runFixture: () => undefined,
+        auditSignatures: (attemptRoot, requestedVersion) => {
+          expect(requestedVersion).toBe(version);
+          expect(existsSync(attemptRoot)).toBe(true);
+          writeFileSync(join(attemptRoot, "attempt-marker"), "audit");
+          attemptRoots.push(attemptRoot);
+          if (attemptRoots.length === 1) throw new Error("signature records not propagated");
+        },
+        attempts: 2,
+        delay: () => Promise.resolve(),
+      });
+
+      expect(attemptRoots).toHaveLength(2);
+      expect(new Set(attemptRoots).size).toBe(2);
+      expect(attemptRoots.every((root) => !existsSync(root))).toBe(true);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("reports fixture retry exhaustion and cleans every attempt root", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
+    const state = registryMetadata();
+    const attemptRoots: string[] = [];
+
+    try {
+      await expect(
+        verifyRegistryPackage({
+          version,
+          packageRoot,
+          lookup: () => Promise.resolve({
+            metadata: state.metadata,
+            packageDocument: state.packageDocument,
+          }),
+          fetchAttestations: () => Promise.resolve(provenanceAttestations()),
+          expectedCommit: "a".repeat(40),
+          download: () => Promise.resolve(state.bytes),
+          validateTarball: () => undefined,
+          runFixture: (fixture, _requestedVersion, _tarball, _root, attemptRoot) => {
+            writeFileSync(join(attemptRoot, "attempt-marker"), fixture);
+            attemptRoots.push(attemptRoot);
+            throw new Error("registry package still unavailable");
+          },
+          auditSignatures: () => undefined,
+          attempts: 3,
+          delay: () => Promise.resolve(),
+        }),
+      ).rejects.toThrow(/vite-smoke.*failed after 3 attempts.*still unavailable/i);
+      expect(attemptRoots).toHaveLength(3);
+      expect(new Set(attemptRoots).size).toBe(3);
+      expect(attemptRoots.every((root) => !existsSync(root))).toBe(true);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("reports signature retry exhaustion and cleans every attempt root", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
+    const state = registryMetadata();
+    const attemptRoots: string[] = [];
+
+    try {
+      await expect(
+        verifyRegistryPackage({
+          version,
+          packageRoot,
+          lookup: () => Promise.resolve({
+            metadata: state.metadata,
+            packageDocument: state.packageDocument,
+          }),
+          fetchAttestations: () => Promise.resolve(provenanceAttestations()),
+          expectedCommit: "a".repeat(40),
+          download: () => Promise.resolve(state.bytes),
+          validateTarball: () => undefined,
+          runFixture: () => undefined,
+          auditSignatures: (attemptRoot) => {
+            writeFileSync(join(attemptRoot, "attempt-marker"), "audit");
+            attemptRoots.push(attemptRoot);
+            throw new Error("signature record still unavailable");
+          },
+          attempts: 3,
+          delay: () => Promise.resolve(),
+        }),
+      ).rejects.toThrow(/npm signature audit.*failed after 3 attempts.*still unavailable/i);
+      expect(attemptRoots).toHaveLength(3);
+      expect(new Set(attemptRoots).size).toBe(3);
+      expect(attemptRoots.every((root) => !existsSync(root))).toBe(true);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("does not retry a distinguishable installed-artifact mismatch", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
+    const state = registryMetadata();
+    const attemptRoots: string[] = [];
+
+    try {
+      await expect(
+        verifyRegistryPackage({
+          version,
+          packageRoot,
+          lookup: () => Promise.resolve({
+            metadata: state.metadata,
+            packageDocument: state.packageDocument,
+          }),
+          fetchAttestations: () => Promise.resolve(provenanceAttestations()),
+          expectedCommit: "a".repeat(40),
+          download: () => Promise.resolve(state.bytes),
+          validateTarball: () => undefined,
+          runFixture: (_fixture, _requestedVersion, _tarball, _root, attemptRoot) => {
+            attemptRoots.push(attemptRoot);
+            throw new Error("Installed package file parity mismatch");
+          },
+          auditSignatures: () => undefined,
+          attempts: 3,
+          delay: () => Promise.resolve(),
+        }),
+      ).rejects.toThrow(/installed package file parity mismatch/i);
+      expect(attemptRoots).toHaveLength(1);
+      expect(existsSync(attemptRoots[0])).toBe(false);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
   it("cleans the registry task root when post-download verification fails", async () => {
     const packageRoot = mkdtempSync(join(tmpdir(), "base-registry-package-"));
     const state = registryMetadata();
@@ -630,6 +813,22 @@ describe("release workflow contract", () => {
     expect(workflow).toContain("npm@11.19.0");
     expect(workflow).toContain("version: 10.30.3");
     expect(workflow).toContain("pnpm install --frozen-lockfile");
+
+    const resolvedActions = [
+      ["actions/checkout", "v4.4.0", "11d5960a326750d5838078e36cf38b85af677262"],
+      ["actions/setup-node", "v4.4.0", "49933ea5288caeca8642d1e84afbd3f7d6820020"],
+      ["pnpm/action-setup", "v4.3.0", "b906affcce14559ad1aafd4ab0e942779e9f58b1"],
+      ["actions/upload-artifact", "v4.6.2", "ea165f8d65b6e75b540449e92b4886f43607fa02"],
+      ["actions/download-artifact", "v4.3.0", "d3f86a106a0bac45b974a628896c90dbdf5c8093"],
+    ];
+    const annotatedActions = [...workflow.matchAll(
+      /# ([^\s]+) (v\d+\.\d+\.\d+)\n\s+- uses: ([^@\s]+)@([0-9a-f]{40})/g,
+    )].map((match) => match.slice(1));
+    expect(annotatedActions).toHaveLength(actions.length);
+    for (const [commentedAction, tag, usedAction, sha] of annotatedActions) {
+      expect(commentedAction).toBe(usedAction);
+      expect(resolvedActions).toContainEqual([usedAction, tag, sha]);
+    }
   });
 
   it("keeps the ordinary verify gate offline and exposes release-only scripts", () => {

@@ -47,7 +47,6 @@ export function retryRegistryLookup<T>(
     delay?: (milliseconds: number) => Promise<void>;
   },
 ): Promise<T>;
-
 export interface VerifyRegistryPackageOptions {
   version: string;
   packageRoot?: string;
@@ -65,8 +64,9 @@ export interface VerifyRegistryPackageOptions {
     version: string,
     tarball: string,
     packageRoot: string,
+    attemptRoot: string,
   ) => Promise<void> | void;
-  auditSignatures?: (root: string, version: string) => void;
+  auditSignatures?: (root: string, version: string) => Promise<void> | void;
   attempts?: number;
   delay?: (milliseconds: number) => Promise<void>;
 }

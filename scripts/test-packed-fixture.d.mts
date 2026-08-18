@@ -24,6 +24,7 @@ export interface InstalledFixtureOptions {
   expectedTarball?: string;
   onInstalledPackage?: (installedPackageRoot: string) => void;
   onTemporaryRootCreated?: (temporaryRoot: string) => void;
+  temporaryParent?: string;
 }
 
 export function runInstalledFixture(options?: InstalledFixtureOptions): Promise<void>;

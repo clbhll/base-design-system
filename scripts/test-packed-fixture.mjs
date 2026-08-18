@@ -395,6 +395,7 @@ export async function runInstalledFixture({
   expectedTarball,
   onInstalledPackage,
   onTemporaryRootCreated,
+  temporaryParent,
 } = {}) {
   const root = resolve(packageRoot);
   const fixtureTemplateRoot = resolve(root, "test/fixtures", fixtureTemplate);
@@ -403,7 +404,8 @@ export async function runInstalledFixture({
   }
   assertFixtureTemplateContract(fixtureTemplateRoot, fixtureTemplate);
 
-  const tempParent = resolve(root, ".tmp");
+  const tempParent = temporaryParent ? resolve(temporaryParent) : resolve(root, ".tmp");
+  assertPathContained(tempParent, root);
   mkdirSync(tempParent, { recursive: true });
   const tempRoot = mkdtempSync(join(tempParent, `${fixtureTemplate}-fixture-`));
   const runRoot = resolve(tempRoot, "run");
