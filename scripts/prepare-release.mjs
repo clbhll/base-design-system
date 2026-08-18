@@ -26,6 +26,52 @@ function assertEqual(actual, expected, label) {
   }
 }
 
+function normalizeJsonValue(value) {
+  if (Array.isArray(value)) return value.map(normalizeJsonValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, normalizeJsonValue(entry)]),
+    );
+  }
+  return value;
+}
+
+function sameJsonValue(actual, expected) {
+  return JSON.stringify(normalizeJsonValue(actual)) === JSON.stringify(normalizeJsonValue(expected));
+}
+
+export function assertReleaseCandidateIdentity(candidateManifest, releaseManifest) {
+  for (const field of ["name", "version"]) {
+    if (candidateManifest?.[field] !== releaseManifest?.[field]) {
+      throw new Error(
+        `Release candidate ${field} mismatch. Expected: ${releaseManifest?.[field]}. Actual: ${candidateManifest?.[field]}`,
+      );
+    }
+  }
+  if (!sameJsonValue(candidateManifest?.repository, releaseManifest?.repository)) {
+    throw new Error("Release candidate repository mismatch");
+  }
+  if (!sameJsonValue(candidateManifest?.publishConfig, releaseManifest?.publishConfig)) {
+    throw new Error("Release candidate publishConfig mismatch");
+  }
+}
+
+export function readReleaseCandidateManifest(tarballPath) {
+  try {
+    return JSON.parse(
+      execFileSync("tar", ["-xOf", resolve(tarballPath), "package/package.json"], {
+        encoding: "utf8",
+      }),
+    );
+  } catch (error) {
+    throw new Error("Release candidate package manifest is missing or malformed", {
+      cause: error,
+    });
+  }
+}
+
 export function assertReleaseState({
   tag,
   packageJson,
@@ -123,6 +169,7 @@ export async function prepareReleaseCandidate({
       throw new Error(`Release candidate must be a .tgz inside its task root: ${candidate}`);
     }
     await validateTarball(candidate);
+    assertReleaseCandidateIdentity(readReleaseCandidateManifest(candidate), packageJson);
     for (const fixtureTemplate of ["vite-smoke", "next-smoke"]) {
       await runFixture(fixtureTemplate, candidate, root);
     }

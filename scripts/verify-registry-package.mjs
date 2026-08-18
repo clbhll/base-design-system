@@ -152,7 +152,7 @@ export function assertProvenanceAttestations({
   if (
     definition?.buildType !== "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1" ||
     workflow?.repository !== "https://github.com/clbhll/base-design-system" ||
-    workflow?.path !== ".github/workflows/release.yml" ||
+    workflow?.path !== "/.github/workflows/release.yml" ||
     workflow?.ref !== expectedRef
   ) {
     throw new Error("Provenance workflow identity mismatch");

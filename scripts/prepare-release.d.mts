@@ -25,6 +25,13 @@ export interface ReleaseStateOptions {
 }
 
 export function assertReleaseState(options: ReleaseStateOptions): void;
+export function assertReleaseCandidateIdentity(
+  candidateManifest: ReleasePackageManifest,
+  releaseManifest: ReleasePackageManifest,
+): void;
+export function readReleaseCandidateManifest(
+  tarballPath: string,
+): ReleasePackageManifest;
 export function assertVersionAbsent(
   packageDocument: { versions?: Record<string, unknown> },
   version: string,

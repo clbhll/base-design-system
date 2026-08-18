@@ -1,8 +1,12 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import {
   existsSync,
+  copyFileSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -11,6 +15,7 @@ import { tmpdir } from "node:os";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  assertReleaseCandidateIdentity,
   assertReleaseState,
   assertVersionAbsent,
   prepareReleaseCandidate,
@@ -104,7 +109,7 @@ function provenanceAttestations(overrides: Record<string, unknown> = {}) {
           workflow: {
             ref: `refs/tags/v${version}`,
             repository: "https://github.com/clbhll/base-design-system",
-            path: ".github/workflows/release.yml",
+            path: "/.github/workflows/release.yml",
           },
         },
         resolvedDependencies: [
@@ -128,6 +133,27 @@ function provenanceAttestations(overrides: Record<string, unknown> = {}) {
       wrap(provenance.predicateType, provenance),
     ],
   };
+}
+
+function writeCandidateTarball(
+  destination: string,
+  candidateManifest: Record<string, unknown>,
+) {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "base-release-candidate-source-"));
+  const packageDirectory = join(sourceRoot, "package");
+  const tarball = join(destination, "calebhill-base-candidate.tgz");
+  mkdirSync(packageDirectory);
+  writeFileSync(
+    join(packageDirectory, "package.json"),
+    `${JSON.stringify(candidateManifest, null, 2)}\n`,
+  );
+
+  try {
+    execFileSync("tar", ["-czf", tarball, "package"], { cwd: sourceRoot });
+    return tarball;
+  } finally {
+    rmSync(sourceRoot, { force: true, recursive: true });
+  }
 }
 
 describe("release preparation state", () => {
@@ -207,9 +233,7 @@ describe("deterministic candidate preparation", () => {
           temporaryRoot = root;
         },
         packCandidate: (_root: string, destination: string) => {
-          const tarball = join(destination, "calebhill-base-0.1.0-alpha.0.tgz");
-          writeFileSync(tarball, "one immutable candidate");
-          return tarball;
+          return writeCandidateTarball(destination, packageJson);
         },
         validateTarball: () => undefined,
         runFixture: (fixtureTemplate: string) => {
@@ -219,9 +243,9 @@ describe("deterministic candidate preparation", () => {
 
       expect(result.version).toBe(version);
       expect(result.digest).toBe(
-        createHash("sha256").update("one immutable candidate").digest("hex"),
+        createHash("sha256").update(readFileSync(result.path)).digest("hex"),
       );
-      expect(readFileSync(result.path, "utf8")).toBe("one immutable candidate");
+      expect(result.path).toMatch(/\.tgz$/);
       expect(observedFixtures).toEqual(["vite-smoke", "next-smoke"]);
       expect(temporaryRoot).not.toBe("");
       expect(existsSync(temporaryRoot)).toBe(false);
@@ -248,9 +272,7 @@ describe("deterministic candidate preparation", () => {
             temporaryRoot = root;
           },
           packCandidate: (_root: string, destination: string) => {
-            const tarball = join(destination, "candidate.tgz");
-            writeFileSync(tarball, "candidate");
-            return tarball;
+            return writeCandidateTarball(destination, packageJson);
           },
           validateTarball: () => undefined,
           runFixture: () => Promise.reject(new Error("fixture failure")),
@@ -260,6 +282,129 @@ describe("deterministic candidate preparation", () => {
       expect(existsSync(temporaryRoot)).toBe(false);
     } finally {
       rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    ["name", { name: "@calebhill/other" }, /candidate.*name/i],
+    ["version", { version: "0.1.0-alpha.1" }, /candidate.*version/i],
+    [
+      "repository",
+      { repository: { type: "git", url: "git+https://github.com/example/base.git" } },
+      /candidate.*repository/i,
+    ],
+    [
+      "registry",
+      { publishConfig: { ...packageJson.publishConfig, registry: "https://registry.example.test" } },
+      /candidate.*publishConfig/i,
+    ],
+    [
+      "access",
+      { publishConfig: { ...packageJson.publishConfig, access: "restricted" } },
+      /candidate.*publishConfig/i,
+    ],
+    [
+      "tag",
+      { publishConfig: { ...packageJson.publishConfig, tag: "latest" } },
+      /candidate.*publishConfig/i,
+    ],
+    [
+      "provenance",
+      { publishConfig: { ...packageJson.publishConfig, provenance: false } },
+      /candidate.*publishConfig/i,
+    ],
+  ])("rejects a valid candidate whose %s was swapped after release-state validation", async (_field, mutation, message) => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-release-package-"));
+    writeFileSync(join(packageRoot, "package.json"), `${JSON.stringify(packageJson)}\n`);
+
+    try {
+      const candidateManifest = { ...packageJson, ...mutation };
+      await expect(
+        prepareReleaseCandidate({
+          packageRoot,
+          tag: `v${version}`,
+          preState,
+          pendingChangesets: [],
+          containedInMain: true,
+          registryDocument: { versions: {} },
+          packCandidate: (_root: string, destination: string) =>
+            writeCandidateTarball(destination, candidateManifest),
+          validateTarball: () => undefined,
+          runFixture: () => undefined,
+        }),
+      ).rejects.toThrow(message);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("requires exact candidate release fields even when called without packing", () => {
+    expect(() => assertReleaseCandidateIdentity(packageJson, packageJson)).not.toThrow();
+    expect(() =>
+      assertReleaseCandidateIdentity(
+        { ...packageJson, version: "0.1.0-alpha.1" },
+        packageJson,
+      ),
+    ).toThrow(/candidate.*version/i);
+  });
+
+  it("rejects a swapped version in a candidate that passes the complete package gate", async () => {
+    const packageRoot = mkdtempSync(join(tmpdir(), "base-release-package-"));
+    const packedRoot = mkdtempSync(join(tmpdir(), "base-release-packed-"));
+    const extractedRoot = mkdtempSync(join(tmpdir(), "base-release-extracted-"));
+    writeFileSync(join(packageRoot, "package.json"), `${JSON.stringify(packageJson)}\n`);
+
+    try {
+      execFileSync("pnpm", ["pack", "--pack-destination", packedRoot], {
+        cwd: resolve("."),
+        stdio: "ignore",
+      });
+      const original = readdirSync(packedRoot).find((entry) => entry.endsWith(".tgz"));
+      if (!original) throw new Error("Expected a locally packed Base candidate");
+      execFileSync("tar", ["-xf", join(packedRoot, original), "-C", extractedRoot]);
+      const manifestPath = join(extractedRoot, "package/package.json");
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+      writeFileSync(
+        manifestPath,
+        `${JSON.stringify({ ...manifest, version: "0.1.0-alpha.1" }, null, 2)}\n`,
+      );
+      const swapped = join(packedRoot, "swapped-valid-base.tgz");
+      execFileSync(
+        "tar",
+        [
+          "-czf",
+          swapped,
+          "package/LICENSE",
+          "package/README.md",
+          "package/dist/index.d.ts",
+          "package/dist/index.js",
+          "package/dist/styles.css",
+          "package/dist/tokens.css",
+          "package/package.json",
+        ],
+        { cwd: extractedRoot },
+      );
+
+      await expect(
+        prepareReleaseCandidate({
+          packageRoot,
+          tag: `v${version}`,
+          preState,
+          pendingChangesets: [],
+          containedInMain: true,
+          registryDocument: { versions: {} },
+          packCandidate: (_root: string, destination: string) => {
+            const candidate = join(destination, "swapped-valid-base.tgz");
+            copyFileSync(swapped, candidate);
+            return candidate;
+          },
+          runFixture: () => undefined,
+        }),
+      ).rejects.toThrow(/candidate.*version/i);
+    } finally {
+      rmSync(packageRoot, { force: true, recursive: true });
+      rmSync(packedRoot, { force: true, recursive: true });
+      rmSync(extractedRoot, { force: true, recursive: true });
     }
   });
 });
@@ -313,7 +458,7 @@ describe("exact registry artifact verification", () => {
     );
   });
 
-  it("ties provenance to the exact repository, workflow, tag, commit, and artifact", () => {
+  it("ties canonical npm provenance to the exact repository, workflow, tag, commit, and artifact", () => {
     const state = registryMetadata();
     expect(() =>
       assertProvenanceAttestations({
@@ -332,16 +477,21 @@ describe("exact registry artifact verification", () => {
         buildDefinition: { externalParameters: { workflow: { path: string } } };
       };
     };
-    provenance.predicate.buildDefinition.externalParameters.workflow.path = ".github/workflows/other.yml";
-    document.attestations[1].bundle.dsseEnvelope.payload = Buffer.from(JSON.stringify(provenance)).toString("base64");
-    expect(() =>
-      assertProvenanceAttestations({
-        document,
-        version,
-        integrity: state.metadata.dist.integrity,
-        expectedCommit: "a".repeat(40),
-      }),
-    ).toThrow(/workflow/i);
+    for (const wrongPath of [
+      ".github/workflows/release.yml",
+      "/.github/workflows/other.yml",
+    ]) {
+      provenance.predicate.buildDefinition.externalParameters.workflow.path = wrongPath;
+      document.attestations[1].bundle.dsseEnvelope.payload = Buffer.from(JSON.stringify(provenance)).toString("base64");
+      expect(() =>
+        assertProvenanceAttestations({
+          document,
+          version,
+          integrity: state.metadata.dist.integrity,
+          expectedCommit: "a".repeat(40),
+        }),
+      ).toThrow(/workflow/i);
+    }
   });
 
   it("retries propagation only to the configured bound", async () => {
@@ -463,6 +613,12 @@ describe("release workflow contract", () => {
     expect(workflow).not.toMatch(/NODE_AUTH_TOKEN|NPM_TOKEN|npm[_-]?token|secrets\./i);
     expect(workflow).toMatch(/npm publish [^\n]+ --access public --tag next --provenance/);
     expect(workflow).toMatch(/sha256sum[\s\S]*needs\.verify\.outputs\.digest/);
+    expect(workflow).toMatch(/tar -xOf [^\n]+ package\/package\.json/);
+    expect(workflow).toMatch(/candidate_manifest\.version[\s\S]*RELEASE_VERSION/);
+    expect(workflow).toMatch(/candidate_manifest\.repository/);
+    expect(workflow).toMatch(/clbhll\/base-design-system/);
+    expect(workflow).toMatch(/candidate_manifest\.publishConfig/);
+    expect(workflow).toMatch(/registry\.npmjs\.org/);
   });
 
   it("pins every action and exact toolchain version", () => {

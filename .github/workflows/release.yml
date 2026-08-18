@@ -79,12 +79,60 @@ jobs:
       - name: Verify candidate digest
         id: candidate
         shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.verify.outputs.version }}
         run: |
           mapfile -t candidates < <(find candidate -maxdepth 1 -type f -name '*.tgz' -print)
           test "${#candidates[@]}" -eq 1
           candidate_path="${candidates[0]}"
           actual_digest="$(sha256sum "$candidate_path" | awk '{print $1}')"
           test "$actual_digest" = "${{ needs.verify.outputs.digest }}"
+          manifest_path="candidate/candidate-package.json"
+          tar -xOf "$candidate_path" package/package.json > "$manifest_path"
+          export CANDIDATE_MANIFEST_PATH="$manifest_path"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const candidate_manifest = JSON.parse(
+            readFileSync(process.env.CANDIDATE_MANIFEST_PATH, "utf8"),
+          );
+          const expected_repository = {
+            type: "git",
+            url: "git+https://github.com/clbhll/base-design-system.git",
+          };
+          const expected_publish_config = {
+            registry: "https://registry.npmjs.org",
+            access: "public",
+            provenance: true,
+            tag: "next",
+          };
+          const normalize = (value) => {
+            if (Array.isArray(value)) return value.map(normalize);
+            if (value && typeof value === "object") {
+              return Object.fromEntries(
+                Object.entries(value)
+                  .sort(([left], [right]) => left.localeCompare(right))
+                  .map(([key, entry]) => [key, normalize(entry)]),
+              );
+            }
+            return value;
+          };
+          const same = (actual, expected) =>
+            JSON.stringify(normalize(actual)) === JSON.stringify(normalize(expected));
+
+          if (candidate_manifest.name !== "@calebhill/base") {
+            throw new Error("Candidate package name mismatch");
+          }
+          if (candidate_manifest.version !== process.env.RELEASE_VERSION) {
+            throw new Error("Candidate package version mismatch");
+          }
+          if (!same(candidate_manifest.repository, expected_repository)) {
+            throw new Error("Candidate package repository mismatch");
+          }
+          if (!same(candidate_manifest.publishConfig, expected_publish_config)) {
+            throw new Error("Candidate package publishConfig mismatch");
+          }
+          NODE
           echo "path=$candidate_path" >> "$GITHUB_OUTPUT"
       - name: Confirm immutable version is absent
         shell: bash
