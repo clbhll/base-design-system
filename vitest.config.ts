@@ -1,6 +1,11 @@
 import { defineConfig } from "vitest/config";
 
+import { baseLabAliases } from "./lab/vite.aliases";
+
 export default defineConfig({
+  resolve: {
+    alias: baseLabAliases,
+  },
   test: {
     environment: "jsdom",
     fileParallelism: false,
