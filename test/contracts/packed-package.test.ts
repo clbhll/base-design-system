@@ -19,6 +19,17 @@ function readExtractedPackageManifest(packageJsonPath: string): ExtractedPackage
   return JSON.parse(readFileSync(packageJsonPath, "utf8")) as ExtractedPackageManifest;
 }
 
+function updateExtractedPackageManifest(
+  root: string,
+  update: (packageJson: ExtractedPackageManifest) => void,
+) {
+  const packageJsonPath = join(root, "package.json");
+  const packageJson = readExtractedPackageManifest(packageJsonPath);
+
+  update(packageJson);
+  writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+}
+
 function writeExtractedPackage(root: string) {
   mkdirSync(join(root, "dist"), { recursive: true });
   writeFileSync(join(root, "LICENSE"), "MIT\n");
@@ -171,10 +182,9 @@ describe("packed package contract", () => {
   it("rejects a fourth package export path", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.exports["./internal.css"] = "./dist/styles.css";
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.exports["./internal.css"] = "./dist/styles.css";
+        });
       }),
     ).toThrow(/exports/i);
   });
@@ -182,10 +192,9 @@ describe("packed package contract", () => {
   it("rejects a missing CSS side effect", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.sideEffects = ["./dist/styles.css"];
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.sideEffects = ["./dist/styles.css"];
+        });
       }),
     ).toThrow(/side effects/i);
   });
@@ -193,10 +202,9 @@ describe("packed package contract", () => {
   it("rejects an application dependency or product string", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.dependencies = { next: "16.0.0" };
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.dependencies = { next: "16.0.0" };
+        });
       }),
     ).toThrow(/forbidden packed content.*next/i);
   });
@@ -236,10 +244,9 @@ describe("packed package contract", () => {
   it("rejects a package name outside the approved identity", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.name = "@calebhill/other";
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.name = "@calebhill/other";
+        });
       }),
     ).toThrow(/package name/i);
   });
@@ -247,10 +254,9 @@ describe("packed package contract", () => {
   it("rejects a non-ESM package module type", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.type = "commonjs";
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.type = "commonjs";
+        });
       }),
     ).toThrow(/module type/i);
   });
@@ -258,10 +264,9 @@ describe("packed package contract", () => {
   it("rejects a peer dependency range outside the approved React contract", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.peerDependencies.react = "^18.0.0";
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.peerDependencies.react = "^18.0.0";
+        });
       }),
     ).toThrow(/peer dependencies/i);
   });
@@ -269,10 +274,9 @@ describe("packed package contract", () => {
   it("rejects an arbitrary runtime dependency", () => {
     expect(() =>
       mutatePackage((root) => {
-        const packageJsonPath = join(root, "package.json");
-        const packageJson = readExtractedPackageManifest(packageJsonPath);
-        packageJson.dependencies = { "tiny-invariant": "1.3.3" };
-        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+        updateExtractedPackageManifest(root, (packageJson) => {
+          packageJson.dependencies = { "tiny-invariant": "1.3.3" };
+        });
       }),
     ).toThrow(/runtime dependencies/i);
   });
