@@ -99,6 +99,20 @@ describe("alpha component lab", () => {
     ).toHaveLength(0);
   });
 
+  it("gives each ButtonLink specimen a unique, valid fragment destination", () => {
+    render(<App />);
+
+    const links = screen.getAllByRole("link", { name: "Button link" });
+    const fragmentIds = links.map((link) => link.getAttribute("href")?.slice(1));
+
+    expect(fragmentIds).toHaveLength(2);
+    expect(new Set(fragmentIds).size).toBe(2);
+    for (const fragmentId of fragmentIds) {
+      expect(fragmentId).toBeTruthy();
+      expect(document.getElementById(fragmentId as string)).not.toBeNull();
+    }
+  });
+
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
     const appSource = readFileSync("lab/src/app.tsx", "utf8");
     const packageSource = readFileSync("src/index.ts", "utf8");

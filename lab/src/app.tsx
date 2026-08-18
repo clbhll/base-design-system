@@ -120,7 +120,7 @@ function ComponentPanel({ theme }: { theme: BaseTheme }) {
 
       <FoundationSpecimens theme={theme} />
 
-      <section className="lab-component-section">
+      <section className="lab-component-section" id={`${theme}-button-link-target`}>
         <h3 className="base-type-heading-sm">Actions</h3>
         <div className="lab-component-grid">
           {buttonVariants.map(([variant, label]) => (
@@ -135,7 +135,7 @@ function ComponentPanel({ theme }: { theme: BaseTheme }) {
             <TrashIcon />
           </Button>
           <Button disabled>Unavailable action</Button>
-          <ButtonLink href="#button-link">Button link</ButtonLink>
+          <ButtonLink href={`#${theme}-button-link-target`}>Button link</ButtonLink>
         </div>
         <code className="lab-code-sample base-type-mono">{`<Button variant="primary">Primary</Button>`}</code>
       </section>
