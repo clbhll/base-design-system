@@ -255,6 +255,18 @@ describe("packed package contract", () => {
     ).toThrow(/declaration exports/i);
   });
 
+  it.each([
+    ["a namespace export", "export as namespace UnexpectedGlobal;\n"],
+    ["a global augmentation", "declare global { interface Window { baseLeak: string } }\n"],
+    ["an external module augmentation", 'declare module "react" { interface CSSProperties { baseLeak?: string } }\n'],
+  ])("rejects %s outside the approved declaration surface", (_name, declaration) => {
+    expect(() =>
+      mutatePackage((root) => {
+        writeFileSync(join(root, "dist/index.d.ts"), `\n${declaration}`, { flag: "a" });
+      }),
+    ).toThrow(/declaration exports/i);
+  });
+
   it("rejects StatusTag in packed declarations", () => {
     expect(() =>
       mutatePackage((root) => {

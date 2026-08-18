@@ -161,13 +161,22 @@ function assertForbiddenContent(files) {
 function assertDeclarationSurface(declarations) {
   const names = new Set();
   const sourceFile = ts.createSourceFile("dist/index.d.ts", declarations, ts.ScriptTarget.Latest, false);
+  const allowedTopLevelStatementKinds = new Set([
+    ts.SyntaxKind.ImportDeclaration,
+    ts.SyntaxKind.VariableStatement,
+    ts.SyntaxKind.FunctionDeclaration,
+    ts.SyntaxKind.TypeAliasDeclaration,
+    ts.SyntaxKind.InterfaceDeclaration,
+    ts.SyntaxKind.ExportDeclaration,
+  ]);
   const hasExportModifier = (node) =>
     node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
 
   for (const statement of sourceFile.statements) {
-    if (ts.isExportAssignment(statement)) {
-      names.add("default");
-      continue;
+    if (!allowedTopLevelStatementKinds.has(statement.kind)) {
+      throw new Error(
+        `Packed declaration exports mismatch. Unexpected top-level ${ts.SyntaxKind[statement.kind]} statement`,
+      );
     }
 
     if (ts.isExportDeclaration(statement)) {
