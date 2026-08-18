@@ -48,6 +48,13 @@ const semanticTokens = [
   "--base-color-code-border",
 ] as const;
 
+const alphaDangerColors = {
+  "--base-ref-color-red-50": "#fee4e2",
+  "--base-ref-color-red-200": "#ff8a80",
+  "--base-ref-color-red-700": "#b42318",
+  "--base-ref-color-red-950": "#33120f",
+} as const;
+
 const foundationClasses = [
   ".base-type-display",
   ".base-type-heading-lg",
@@ -166,6 +173,24 @@ describe("foundation CSS contract", () => {
     expect(dark).toContain("--base-color-accent: var(--base-ref-color-blue-400)");
     expect(light).toContain("--base-color-code-surface: var(--base-color-background-subtle)");
     expect(dark).toContain("--base-color-code-surface: var(--base-color-background-subtle)");
+  });
+
+  it("maps accessible danger colors for light and dark themes", () => {
+    const light = themeProperties("light");
+    const dark = themeProperties("dark");
+
+    for (const [property, expected] of Object.entries(alphaDangerColors)) {
+      expect(light.get(property)).toBe(expected);
+      expect(dark.get(property)).toBe(expected);
+    }
+
+    expect(light.get("--base-color-danger")).toBe("var(--base-ref-color-red-700)");
+    expect(light.get("--base-color-danger-subtle")).toBe("var(--base-ref-color-red-50)");
+    expect(dark.get("--base-color-danger")).toBe("var(--base-ref-color-red-200)");
+    expect(dark.get("--base-color-danger-subtle")).toBe("var(--base-ref-color-red-950)");
+
+    expect(contrastRatio("#b42318", "#fee4e2")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#ff8a80", "#33120f")).toBeGreaterThanOrEqual(4.5);
   });
 
   it("removes spatial press feedback for reduced motion", () => {

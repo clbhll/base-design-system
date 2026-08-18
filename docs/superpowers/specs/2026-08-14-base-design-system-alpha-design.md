@@ -16,7 +16,7 @@ The first delivery must prove the package boundary with a small, coherent vertic
 - Publish an installable `@calebhill/base@0.1.0-alpha.0` prerelease under the npm `next` tag.
 - Establish a framework-agnostic React and TypeScript package with explicit public exports.
 - Ship package-owned light and dark semantic CSS themes without requiring Tailwind in consumers.
-- Migrate Button, ButtonLink, TextInput, ProgressBar, StatusTag, and only the icons those components need.
+- Migrate Button, ButtonLink, TextInput, ProgressBar, and only the icons those components need.
 - Prove the packed artifact in an independent React fixture and a package-owned component lab.
 - Establish CI, accessibility checks, versioning, trusted npm publishing, provenance, and a documented rollback path.
 - Make the alpha foundation extensible enough for the remaining v1 migrations without pre-designing their APIs.
@@ -125,18 +125,16 @@ Primary sources:
 - `photos-me/src/lib/text-input-styles.ts`
 - `photos-me/src/components/progress-bar.tsx`
 - `photos-me/src/lib/progress-bar.ts`
-- `photos-me/src/components/status-tag.tsx`
-- `photos-me/src/lib/status-tag.ts`
 
 `TextInput` extends native input attributes, forwards its ref, and composes consumer-provided `aria-describedby` values with package error messaging.
 
 `ProgressBar` is determinate. Non-finite values fall back to zero and values outside the supported range are clamped. Accessible value semantics reflect the normalized result.
 
-`StatusTag` exposes a typed status API for stable, beta, unstable, and deprecated states. The associated semantic colors are included in the alpha token contract.
+CLB-716 owns a documentation-only `StatusTag` for the front-facing component lab. It lives under `lab/src/`, uses lab-local status colors, and is never exported or included in the npm package.
 
 ## Component lab
 
-The Vite lab imports production source through the same public entry point used by the build. It does not maintain duplicate component implementations.
+The Vite lab imports production components through the same public entry point used by the build. Its documentation-only `StatusTag` remains lab-local rather than duplicating a package component.
 
 For every alpha component it shows:
 
@@ -192,8 +190,8 @@ The project uses ordered milestones without target dates until the alpha establi
 
 - CLB-692 — tokens, typography, and interactions
 - CLB-694 — Button, ButtonLink, and icons
-- CLB-695 — TextInput, ProgressBar, and StatusTag
-- New two-point child issue under CLB-703 — build the alpha component lab
+- CLB-695 — TextInput and ProgressBar
+- CLB-716 — build the alpha component lab, including its lab-only StatusTag
 - New two-point child issue under CLB-704 — add alpha package contracts and Vite fixture
 
 ### 3. Public alpha

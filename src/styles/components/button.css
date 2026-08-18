@@ -1,0 +1,110 @@
+/* base-component: button */
+
+.base-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--base-ref-space-1);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  margin: 0;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.base-button-default {
+  height: 2.5rem;
+  padding-inline: var(--base-ref-space-5);
+}
+
+.base-button-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+}
+
+.base-button-primary {
+  color: var(--base-color-background);
+  background-color: var(--base-color-text-primary);
+}
+
+.base-button-secondary {
+  color: var(--base-color-text-primary);
+  background-color: var(--base-color-surface);
+  border-color: var(--base-color-border);
+}
+
+.base-button-secondary:not(:disabled):active {
+  background-color: var(--base-color-surface-active);
+  border-color: var(--base-color-border-active);
+}
+
+.base-button-subtle {
+  color: var(--base-color-text-primary);
+  background-color: var(--base-color-surface-hover);
+}
+
+.base-button-subtle:not(:disabled):active {
+  background-color: var(--base-color-surface-active);
+}
+
+.base-button-destructive {
+  color: var(--base-color-danger);
+  background-color: var(--base-color-danger-subtle);
+}
+
+.base-button-text {
+  color: var(--base-color-text-secondary);
+  background-color: transparent;
+}
+
+.base-button-text:not(:disabled):active {
+  color: var(--base-color-text-primary);
+}
+
+.base-button-text-accent {
+  color: var(--base-color-accent);
+  background-color: transparent;
+}
+
+.base-button-text-accent:not(:disabled):active {
+  color: var(--base-color-accent-active);
+}
+
+.base-button:disabled {
+  color: var(--base-color-text-disabled);
+  background-color: var(--base-color-surface-disabled);
+  cursor: default;
+  opacity: 1;
+}
+
+.base-button-secondary:disabled {
+  border-color: var(--base-color-border);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .base-button-primary:not(:disabled):hover,
+  .base-button-destructive:not(:disabled):hover {
+    opacity: 0.85;
+  }
+
+  .base-button-secondary:not(:disabled):hover {
+    background-color: var(--base-color-surface-hover);
+    border-color: var(--base-color-border-hover);
+  }
+
+  .base-button-subtle:not(:disabled):hover {
+    background-color: var(--base-color-surface-active);
+  }
+
+  .base-button-text:not(:disabled):hover {
+    color: var(--base-color-text-primary);
+  }
+
+  .base-button-text-accent:not(:disabled):hover {
+    color: var(--base-color-accent-hover);
+  }
+}

@@ -70,7 +70,7 @@ See [docs/releasing.md](docs/releasing.md) for the Changesets release-preparatio
 
 ## Roadmap
 
-CLB-691 is the completed package scaffold. CLB-692 is the completed foundation and token slice. CLB-694 is the next Button, ButtonLink, and icon slice; CLB-695 is the next TextInput, ProgressBar, and StatusTag slice.
+CLB-691 is the completed package scaffold. CLB-692 is the completed foundation and token slice. CLB-694 is the next Button, ButtonLink, and icon slice; CLB-695 is the next TextInput and ProgressBar slice. CLB-716 will add the front-facing component lab, including a lab-only StatusTag that is never exported or included in the npm package.
 
 ## License
 

@@ -48,6 +48,10 @@
   --base-ref-color-blue-600: #0044cc;
   --base-ref-color-blue-800: #003399;
   --base-ref-color-blue-950: #0d1a33;
+  --base-ref-color-red-50: #fee4e2;
+  --base-ref-color-red-200: #ff8a80;
+  --base-ref-color-red-700: #b42318;
+  --base-ref-color-red-950: #33120f;
   --base-ref-space-1: 0.25rem;
   --base-ref-space-2: 0.5rem;
   --base-ref-space-3: 0.75rem;
@@ -79,6 +83,8 @@
   --base-color-accent-hover: var(--base-ref-color-blue-600);
   --base-color-accent-active: var(--base-ref-color-blue-800);
   --base-color-accent-subtle: var(--base-ref-color-blue-50);
+  --base-color-danger: var(--base-ref-color-red-700);
+  --base-color-danger-subtle: var(--base-ref-color-red-50);
   --base-color-on-accent: var(--base-ref-color-neutral-0);
   --base-color-surface: var(--base-ref-color-neutral-0);
   --base-color-surface-hover: var(--base-ref-color-neutral-100);
@@ -104,6 +110,8 @@
   --base-color-accent-hover: var(--base-ref-color-blue-200);
   --base-color-accent-active: var(--base-ref-color-blue-100);
   --base-color-accent-subtle: var(--base-ref-color-blue-950);
+  --base-color-danger: var(--base-ref-color-red-200);
+  --base-color-danger-subtle: var(--base-ref-color-red-950);
   --base-color-on-accent: var(--base-ref-color-neutral-1000);
   --base-color-surface: var(--base-ref-color-neutral-800);
   --base-color-surface-hover: var(--base-ref-color-neutral-750);
