@@ -11,6 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 import { assertPackageTarball } from "./assert-tarball-contents.mjs";
 import { runInstalledFixture } from "./test-packed-fixture.mjs";
@@ -26,22 +27,6 @@ function assertEqual(actual, expected, label) {
   }
 }
 
-function normalizeJsonValue(value) {
-  if (Array.isArray(value)) return value.map(normalizeJsonValue);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entry]) => [key, normalizeJsonValue(entry)]),
-    );
-  }
-  return value;
-}
-
-function sameJsonValue(actual, expected) {
-  return JSON.stringify(normalizeJsonValue(actual)) === JSON.stringify(normalizeJsonValue(expected));
-}
-
 export function assertReleaseCandidateIdentity(candidateManifest, releaseManifest) {
   for (const field of ["name", "version"]) {
     if (candidateManifest?.[field] !== releaseManifest?.[field]) {
@@ -50,10 +35,10 @@ export function assertReleaseCandidateIdentity(candidateManifest, releaseManifes
       );
     }
   }
-  if (!sameJsonValue(candidateManifest?.repository, releaseManifest?.repository)) {
+  if (!isDeepStrictEqual(candidateManifest?.repository, releaseManifest?.repository)) {
     throw new Error("Release candidate repository mismatch");
   }
-  if (!sameJsonValue(candidateManifest?.publishConfig, releaseManifest?.publishConfig)) {
+  if (!isDeepStrictEqual(candidateManifest?.publishConfig, releaseManifest?.publishConfig)) {
     throw new Error("Release candidate publishConfig mismatch");
   }
 }
