@@ -111,6 +111,9 @@ describe("Button CSS contract", () => {
       for (const reference of references) {
         expect(reference).toMatch(/^--base-/);
         expect(declaredBaseTokens.has(reference), `${reference} must be declared`).toBe(true);
+        expect(reference, `${reference} must use a semantic color token`).not.toMatch(
+          /^--base-ref-color-/,
+        );
       }
 
       if (rawColorIn(declaration.value)) {
