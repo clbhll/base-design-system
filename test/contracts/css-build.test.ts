@@ -13,7 +13,14 @@ describe("css build", () => {
     const labStyles = readFileSync("lab/src/styles.css", "utf8");
 
     expect(labStyles).toBe(
-      '@import "../../src/styles/tokens.css";\n@import "../../src/styles/styles.css";\n',
+      [
+        '@import "../../src/styles/tokens.css";',
+        '@import "../../src/styles/styles.css";',
+        '@import "../../src/styles/components/button.css";',
+        '@import "../../src/styles/components/text-input.css";',
+        '@import "../../src/styles/components/progress-bar.css";',
+        "",
+      ].join("\n"),
     );
   });
 
