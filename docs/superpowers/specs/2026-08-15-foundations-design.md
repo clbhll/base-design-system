@@ -143,7 +143,7 @@ The light accent is `#0055ff`. The dark accent is `#4d90fe`. `calebhill.me` may 
 
 The inline-code properties alias the theme's subtle background and standard border by default. They remain separate semantic properties so a consumer can diverge inline code without redefining all surfaces.
 
-Status colors are not added in this issue. CLB-695 will introduce only the semantic colors required by the approved `StatusTag` states, preventing speculative token growth.
+Status colors are not added in this issue. CLB-716 keeps warning and beta colors local to its documentation-only `StatusTag`; they are not public package tokens.
 
 ## Typography classes
 
