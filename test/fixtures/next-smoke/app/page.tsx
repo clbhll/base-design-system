@@ -1,4 +1,4 @@
-import ReactDOM from "react-dom/client";
+"use client";
 
 import {
   BASE_THEME_ATTRIBUTE,
@@ -17,13 +17,12 @@ import {
   type ProgressBarProps,
   type TextInputProps,
 } from "@calebhill/base";
-import "@calebhill/base/styles.css";
 
 const buttonProps = { type: "button" } satisfies ButtonProps;
 const buttonLinkProps = { target: "_self" } satisfies ButtonLinkProps;
 const buttonSize = "default" satisfies ButtonSize;
 const buttonVariant = "primary" satisfies ButtonVariant;
-const theme: BaseTheme = isBaseTheme("light") ? "light" : "dark";
+const theme: BaseTheme = isBaseTheme("dark") ? "dark" : "light";
 const textInputProps: TextInputProps = {
   "aria-label": "Caption",
   error: "Caption is required",
@@ -33,10 +32,10 @@ const progressBarProps: ProgressBarProps = {
   value: 45,
 };
 
-function FixtureApp() {
+export default function Page() {
   return (
-    <section id="fixture" className="base-type-body" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
-      <Button {...buttonProps} data-fixture="button" size={buttonSize} variant={buttonVariant}>
+    <main id="fixture" className="base-type-body" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
+      <Button {...buttonProps} size={buttonSize} variant={buttonVariant}>
         Save
       </Button>
       <ButtonLink {...buttonLinkProps} href="#fixture">Button link</ButtonLink>
@@ -48,8 +47,6 @@ function FixtureApp() {
       </Button>
       <TextInput {...textInputProps} />
       <ProgressBar {...progressBarProps} />
-    </section>
+    </main>
   );
 }
-
-ReactDOM.createRoot(document.getElementById("root")!).render(<FixtureApp />);

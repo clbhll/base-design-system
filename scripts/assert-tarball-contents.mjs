@@ -336,6 +336,30 @@ export async function assertPackedPackage(packageRoot) {
   assertCssContract(tokens, styles);
 }
 
+export async function assertPackageTarball(
+  tarballPath,
+  { onTemporaryRootCreated } = {},
+) {
+  const tarball = resolve(tarballPath);
+  if (!tarball.endsWith(".tgz")) {
+    throw new Error(`Expected a .tgz package tarball: ${tarball}`);
+  }
+
+  const tempParent = resolve(process.cwd(), ".tmp");
+  mkdirSync(tempParent, { recursive: true });
+  const tempRoot = mkdtempSync(join(tempParent, "supplied-tarball-check-"));
+
+  try {
+    onTemporaryRootCreated?.(tempRoot);
+    const listing = execFileSync("tar", ["-tf", tarball], { encoding: "utf8" });
+    assertTarballContents(listing);
+    execFileSync("tar", ["-xf", tarball, "-C", tempRoot]);
+    await assertPackedPackage(join(tempRoot, "package"));
+  } finally {
+    rmSync(tempRoot, { force: true, recursive: true });
+  }
+}
+
 export async function runTarballCheck({
   packageRoot = process.cwd(),
   onTemporaryRootCreated,
@@ -357,13 +381,7 @@ export async function runTarballCheck({
       throw new Error("Expected pnpm pack to create a tarball");
     }
 
-    const tarball = join(tempRoot, tarballName);
-    const listing = execFileSync("tar", ["-tf", tarball], { encoding: "utf8" });
-    assertTarballContents(listing);
-
-    const extractedPackageRoot = join(tempRoot, "package");
-    execFileSync("tar", ["-xf", tarball, "-C", tempRoot]);
-    await assertPackedPackage(extractedPackageRoot);
+    await assertPackageTarball(join(tempRoot, tarballName));
   } finally {
     rmSync(tempRoot, { force: true, recursive: true });
   }
