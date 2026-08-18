@@ -1,1 +1,4 @@
-export const primitiveRuntimeExports = [] as const;
+export const primitiveRuntimeExports = [
+  "ProgressBar",
+  "TextInput",
+] as const;
