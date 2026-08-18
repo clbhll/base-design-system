@@ -34,11 +34,6 @@
   border-color: var(--base-color-border-active);
 }
 
-.base-text-input-field:focus-visible {
-  outline: 2px solid var(--base-color-focus-ring);
-  outline-offset: 2px;
-}
-
 .base-text-input-field[aria-invalid="true"]:not(:disabled) {
   border-width: 2px;
   border-color: var(--base-color-danger);

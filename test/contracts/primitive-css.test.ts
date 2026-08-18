@@ -157,7 +157,6 @@ describe("primitive CSS contract", () => {
       root,
       '.base-text-input-field:not(:placeholder-shown):not(:disabled):not([aria-invalid="true"])',
     );
-    const focusVisible = declarationsForSelector(root, ".base-text-input-field:focus-visible");
     const error = declarationsForSelector(
       root,
       '.base-text-input-field[aria-invalid="true"]:not(:disabled)',
@@ -186,7 +185,6 @@ describe("primitive CSS contract", () => {
     expect(focus.get("border-width")).toBe("2px");
     expect(focus.get("border-color")).toBe("var(--base-color-border-active)");
     expect(filled.get("border-color")).toBe("var(--base-color-border-active)");
-    expect(focusVisible.get("outline")).toBe("2px solid var(--base-color-focus-ring)");
     expect(error.get("border-width")).toBe("2px");
     expect(error.get("border-color")).toBe("var(--base-color-danger)");
     expect(errorFocus.get("outline-color")).toBe("var(--base-color-danger)");
