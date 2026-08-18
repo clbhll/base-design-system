@@ -60,17 +60,23 @@ Start the local component lab with:
 pnpm lab:dev
 ```
 
-Validate the packed npm artifact in the standalone Vite consumer fixture with:
+Validate one packed npm artifact in the standalone Vite and Next.js consumer fixtures with:
 
 ```sh
 pnpm fixture:test
 ```
 
-See [docs/releasing.md](docs/releasing.md) for the Changesets release-preparation flow. Publishing remains deferred to CLB-705.
+Registry verification is release-only and requires an exact published prerelease:
+
+```sh
+pnpm fixture:registry -- 0.1.0-alpha.0
+```
+
+See [docs/releasing.md](docs/releasing.md) for the Changesets, trusted-publishing, verification, and rollback runbook. Public alphas publish under npm's `next` tag; `StatusTag` remains documentation-only and is never consumable from the package.
 
 ## Roadmap
 
-CLB-691 is the completed package scaffold. CLB-692 is the completed foundation and token slice. CLB-694 is the next Button, ButtonLink, and icon slice; CLB-695 is the next TextInput and ProgressBar slice. CLB-716 will add the front-facing component lab, including a lab-only StatusTag that is never exported or included in the npm package.
+CLB-691 and CLB-692 established the package and foundations. CLB-694 and CLB-695 added the first public action, input, and feedback primitives. CLB-716 added the front-facing component lab, including a lab-only `StatusTag` that is never exported or included in the npm package. CLB-705 owns the alpha release process.
 
 ## License
 

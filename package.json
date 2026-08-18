@@ -50,7 +50,9 @@
     "test:watch": "vitest --exclude test/contracts/tarball-contents.test.ts",
     "typecheck": "tsc --noEmit",
     "prerelease:enter": "changeset pre enter alpha",
+    "release:prepare": "node scripts/prepare-release.mjs",
     "version-packages": "changeset version",
+    "fixture:registry": "node scripts/verify-registry-package.mjs",
     "fixture:test": "node scripts/test-packed-fixture.mjs",
     "verify": "pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build && pnpm lab:build && pnpm test:tarball && pnpm fixture:test"
   },

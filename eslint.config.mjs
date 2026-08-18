@@ -6,7 +6,7 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "lab/dist/**", ".tmp/**", "test/fixtures/vite-smoke/**"],
+    ignores: ["dist/**", "lab/dist/**", ".tmp/**", "test/fixtures/*-smoke/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

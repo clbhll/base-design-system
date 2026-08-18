@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
@@ -86,6 +86,32 @@ describe("tarball contents", () => {
       expect(existsSync(check.temporaryRoot())).toBe(false);
     } finally {
       rmSync(check.markerRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("validates a supplied tarball without invoking pnpm pack", () => {
+    const candidateRoot = mkdtempSync(join(tmpdir(), "base-supplied-tarball-"));
+    const shimRoot = mkdtempSync(join(tmpdir(), "base-supplied-tarball-pnpm-"));
+    const pnpmShim = join(shimRoot, "pnpm");
+    execFileSync("pnpm", ["pack", "--pack-destination", candidateRoot], { stdio: "ignore" });
+    const tarball = resolve(candidateRoot, readdirSync(candidateRoot).find((name) => name.endsWith(".tgz"))!);
+    writeFileSync(pnpmShim, "#!/bin/sh\nexit 99\n");
+    chmodSync(pnpmShim, 0o755);
+    const script = [
+      `import { assertPackageTarball } from ${JSON.stringify(tarballAssertionModule)};`,
+      `await assertPackageTarball(${JSON.stringify(tarball)});`,
+    ].join("\n");
+
+    try {
+      expect(() =>
+        execFileSync("node", ["--input-type=module", "--eval", script], {
+          env: { ...process.env, PATH: `${shimRoot}${delimiter}${process.env.PATH ?? ""}` },
+          stdio: "ignore",
+        }),
+      ).not.toThrow();
+    } finally {
+      rmSync(candidateRoot, { force: true, recursive: true });
+      rmSync(shimRoot, { force: true, recursive: true });
     }
   });
 });
