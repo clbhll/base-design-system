@@ -1,21 +1,44 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { BASE_THEME_ATTRIBUTE, isBaseTheme } from "@calebhill/base";
+import {
+  BASE_THEME_ATTRIBUTE,
+  Button,
+  ButtonLink,
+  MoreIcon,
+  ProgressBar,
+  TextInput,
+  TrashIcon,
+  type ButtonProps,
+  type ProgressBarProps,
+  type TextInputProps,
+} from "@calebhill/base";
 import "@calebhill/base/styles.css";
 
-function FixtureApp() {
-  const theme = "light";
+const buttonProps: ButtonProps = { type: "button" };
+const textInputProps: TextInputProps = {
+  "aria-label": "Caption",
+  error: "Caption is required",
+};
+const progressBarProps: ProgressBarProps = {
+  "aria-label": "Upload progress",
+  value: 45,
+};
 
+function FixtureApp() {
   return (
-    <section className="base-type-body" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
-      fixture:{isBaseTheme(theme) ? theme : "invalid"}{" "}
-      <a className="base-link" href="#fixture">
-        link
-      </a>
-      <button className="base-focus-ring base-pressable base-type-action" type="button">
-        pressable
-      </button>
+    <section className="base-type-body" {...{ [BASE_THEME_ATTRIBUTE]: "light" }}>
+      <Button {...buttonProps} data-fixture="button">
+        Save
+      </Button>
+      <ButtonLink href="#fixture">Button link</ButtonLink>
+      <Button aria-label="More" size="icon">
+        <MoreIcon />
+      </Button>
+      <Button aria-label="Delete" size="icon" variant="destructive">
+        <TrashIcon />
+      </Button>
+      <TextInput {...textInputProps} />
+      <ProgressBar {...progressBarProps} />
     </section>
   );
 }
