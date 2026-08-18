@@ -222,12 +222,35 @@ describe("packed package contract", () => {
     ).toThrow(/declaration exports/i);
   });
 
+  it("rejects a block-comment declaration in place of an approved export", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const declarationsPath = join(root, "dist/index.d.ts");
+        writeFileSync(
+          declarationsPath,
+          readFileSync(declarationsPath, "utf8").replace(
+            "export type ButtonLinkProps = {};",
+            "/*\nexport type ButtonLinkProps = {};\n*/",
+          ),
+        );
+      }),
+    ).toThrow(/declaration exports/i);
+  });
+
   it("rejects an additional exported declaration", () => {
     expect(() =>
       mutatePackage((root) => {
         writeFileSync(join(root, "dist/index.d.ts"), "\nexport type ExtraPublicType = {};\n", {
           flag: "a",
         });
+      }),
+    ).toThrow(/declaration exports/i);
+  });
+
+  it("rejects a default declaration export outside the approved alpha surface", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        writeFileSync(join(root, "dist/index.d.ts"), "\nexport default Button;\n", { flag: "a" });
       }),
     ).toThrow(/declaration exports/i);
   });
@@ -327,6 +350,13 @@ describe("packed package contract", () => {
     ["a bare Vercel identifier", "dist/index.d.ts", "\nvercel\n", /Vercel/i],
     ["a bare Tailwind identifier", "dist/index.d.ts", "\ntailwindcss\n", /Tailwind/i],
     ["a bare source identifier", "dist/index.d.ts", "\nsrc/components/button.tsx\n", /source path/i],
+    ["a bare source theme identifier", "dist/index.d.ts", "\nsrc/theme.ts\n", /source path/i],
+    [
+      "an unapproved generated source label",
+      "dist/index.js",
+      "\n// src/not-approved.ts\n",
+      /source path/i,
+    ],
   ])("rejects %s from the packed artifact", (_name, file, content, expectedError) => {
     expect(() =>
       mutatePackage((root) => {
@@ -414,6 +444,17 @@ describe("packed package contract", () => {
         writeFileSync(join(root, "dist/tokens.css"), `\n${content}\n`, { flag: "a" });
       }),
     ).toThrow(/tokens\.css must remain token-only/i);
+  });
+
+  it.each([
+    ["a comment-only entry", "/* empty */\n"],
+    ["an empty root rule", ":root {}\n"],
+  ])("rejects tokens.css containing %s", (_name, tokens) => {
+    expect(() =>
+      mutatePackage((root) => {
+        writeFileSync(join(root, "dist/tokens.css"), tokens);
+      }),
+    ).toThrow(/tokens\.css must contain approved token rules/i);
   });
 
   it("rejects an unexpected packed tarball file", () => {

@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import postcss from "postcss";
+import ts from "typescript";
 
 export const expectedTarballFiles = [
   "package/LICENSE",
@@ -70,11 +71,22 @@ const forbiddenContent = [
   [/\blab-status-(?:warning|beta)\b/i, "lab warning/beta content"],
   [/@calebhill\/base\/(?:src|dist)\//i, "source package path"],
   [/(?:\.\.\/|\.\/)+src\//, "source path"],
-  [/\bsrc\/(?:components|styles)\//i, "source path"],
+  [/\bsrc\//i, "source path"],
   [/sourceMappingURL\s*=/i, "source map"],
   [/--base-(?:color-)?warning\b/i, "public warning variable"],
   [/--base-(?:color-)?beta\b/i, "public beta variable"],
 ];
+
+// tsup emits these exact source-section labels in the approved ESM bundle. They are
+// build annotations, not importable paths; any other `src/` content remains forbidden.
+const approvedTsupSourceLabels = new Set([
+  "src/theme.ts",
+  "src/components/button.tsx",
+  "src/components/text-input.tsx",
+  "src/components/progress-bar.tsx",
+  "src/components/icons/more-icon.tsx",
+  "src/components/icons/trash-icon.tsx",
+]);
 
 function assertSame(actual, expected, label) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -127,7 +139,16 @@ function readPackageFile(packageRoot, path) {
 
 function assertForbiddenContent(files) {
   for (const [fileName, content] of Object.entries(files)) {
-    const scannedContent = fileName === "dist/index.js" ? content.replace(/^\/\/ src\/[^\r\n]+$/gm, "") : content;
+    const scannedContent =
+      fileName === "dist/index.js"
+        ? content
+            .split(/\r?\n/)
+            .map((line) => {
+              const sourceLabel = /^\/\/ (src\/[^\r\n]+)$/.exec(line)?.[1];
+              return sourceLabel && approvedTsupSourceLabels.has(sourceLabel) ? "" : line;
+            })
+            .join("\n")
+        : content;
 
     for (const [pattern, label] of forbiddenContent) {
       if (pattern.test(scannedContent)) {
@@ -139,23 +160,43 @@ function assertForbiddenContent(files) {
 
 function assertDeclarationSurface(declarations) {
   const names = new Set();
-  const exportedDeclaration = /^export\s+(?:declare\s+)?(?:const|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/gm;
-  const exportedList = /^export\s*{([\s\S]*?)};?$/gm;
+  const sourceFile = ts.createSourceFile("dist/index.d.ts", declarations, ts.ScriptTarget.Latest, false);
+  const hasExportModifier = (node) =>
+    node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
 
-  for (const match of declarations.matchAll(exportedDeclaration)) {
-    names.add(match[1]);
-  }
+  for (const statement of sourceFile.statements) {
+    if (ts.isExportAssignment(statement)) {
+      names.add("default");
+      continue;
+    }
 
-  for (const match of declarations.matchAll(exportedList)) {
-    for (const entry of match[1].split(",")) {
-      const exportedName = entry
-        .trim()
-        .replace(/^type\s+/, "")
-        .split(/\s+as\s+/)
-        .at(-1);
-      if (exportedName) {
-        names.add(exportedName);
+    if (ts.isExportDeclaration(statement)) {
+      if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) {
+        names.add("*");
+        continue;
       }
+
+      for (const element of statement.exportClause.elements) {
+        names.add(element.name.text);
+      }
+      continue;
+    }
+
+    if (!hasExportModifier(statement)) {
+      continue;
+    }
+
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)) {
+          names.add(declaration.name.text);
+        }
+      }
+      continue;
+    }
+
+    if ("name" in statement && statement.name && ts.isIdentifier(statement.name)) {
+      names.add(statement.name.text);
     }
   }
 
@@ -202,15 +243,22 @@ function assertCssContract(tokens, styles) {
     '[data-base-theme="dark"]',
   ]);
   const tokenRoot = postcss.parse(tokens);
+  let tokenRuleCount = 0;
 
   const assertTokenRule = (rule) => {
     if (!rule.selectors || rule.selectors.some((selector) => !allowedTokenSelectors.has(selector))) {
       throw new Error("tokens.css must remain token-only: selectors must be root or Base theme selectors");
     }
 
-    if (rule.nodes?.some((node) => node.type !== "decl" || !node.prop.startsWith("--base-"))) {
+    if (!rule.nodes?.length) {
+      throw new Error("tokens.css must contain approved token rules: every allowed rule needs --base-* declarations");
+    }
+
+    if (rule.nodes.some((node) => node.type !== "decl" || !node.prop.startsWith("--base-"))) {
       throw new Error("tokens.css must remain token-only: declarations must be --base-* custom properties");
     }
+
+    tokenRuleCount += 1;
   };
 
   for (const node of tokenRoot.nodes ?? []) {
@@ -234,6 +282,10 @@ function assertCssContract(tokens, styles) {
     }
 
     throw new Error("tokens.css must remain token-only: only root or Base theme token rules are allowed");
+  }
+
+  if (tokenRuleCount === 0) {
+    throw new Error("tokens.css must contain approved token rules");
   }
 
   const missingComponents = [
