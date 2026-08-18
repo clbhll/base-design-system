@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -12,8 +14,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertExactPackageSpec,
+  assertFixtureTemplateContract,
   assertInstalledFileParity,
+  assertInstalledPackageIdentity,
   assertPathContained,
+  runInstalledFixture,
 } from "../../scripts/test-packed-fixture.mjs";
 
 const fixtureRoot = resolve("test/fixtures");
@@ -36,6 +41,47 @@ const representativeTypes = [
   "ProgressBarProps",
   "TextInputProps",
 ];
+const fixtureDependencies = {
+  "next-smoke": {
+    dependencies: ["next", "react", "react-dom"],
+    devDependencies: ["@types/node", "@types/react", "@types/react-dom", "typescript"],
+  },
+  "vite-smoke": {
+    dependencies: ["react", "react-dom"],
+    devDependencies: [
+      "@types/react",
+      "@types/react-dom",
+      "@vitejs/plugin-react",
+      "typescript",
+      "vite",
+    ],
+  },
+} as const;
+
+function createCandidateTarball() {
+  const root = mkdtempSync(join(tmpdir(), "base-fixture-candidate-"));
+  execFileSync("pnpm", ["pack", "--pack-destination", root], { stdio: "ignore" });
+  const tarballName = readdirSync(root).find((entry) => entry.endsWith(".tgz"));
+  if (!tarballName) throw new Error("Expected a candidate tarball");
+
+  return { root, tarball: join(root, tarballName) };
+}
+
+function mutateFixture(
+  name: keyof typeof fixtureDependencies,
+  mutation: (root: string) => void,
+) {
+  const tempRoot = mkdtempSync(join(tmpdir(), `base-${name}-mutation-`));
+  const fixturePath = join(tempRoot, name);
+  cpSync(join(fixtureRoot, name), fixturePath, { recursive: true });
+  mutation(fixturePath);
+
+  try {
+    assertFixtureTemplateContract(fixturePath, name);
+  } finally {
+    rmSync(tempRoot, { force: true, recursive: true });
+  }
+}
 
 function readFixture(name: string) {
   const root = join(fixtureRoot, name);
@@ -92,6 +138,62 @@ describe("registry fixture package spec contract", () => {
 });
 
 describe("installed registry artifact seams", () => {
+  it("requires the installed manifest to match the requested Base identity", () => {
+    const root = mkdtempSync(join(tmpdir(), "base-installed-identity-"));
+    const packageJsonPath = join(root, "package.json");
+    writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify({ name: "@calebhill/base", version: "0.1.0-alpha.0" })}\n`,
+    );
+
+    try {
+      expect(() => assertInstalledPackageIdentity(root, "0.1.0-alpha.0")).not.toThrow();
+      writeFileSync(
+        packageJsonPath,
+        `${JSON.stringify({ name: "@calebhill/base", version: "0.1.0-alpha.1" })}\n`,
+      );
+      expect(() => assertInstalledPackageIdentity(root, "0.1.0-alpha.0")).toThrow(
+        /installed package identity.*version/i,
+      );
+      writeFileSync(packageJsonPath, `${JSON.stringify({ name: "photos-me", version: "0.1.0-alpha.0" })}\n`);
+      expect(() => assertInstalledPackageIdentity(root, "0.1.0-alpha.0")).toThrow(
+        /installed package identity.*name/i,
+      );
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a candidate whose installed manifest is mutated before runner validation", async () => {
+    const candidate = createCandidateTarball();
+    let temporaryRoot = "";
+
+    try {
+      await expect(
+        runInstalledFixture({
+          fixtureTemplate: "vite-smoke",
+          packageSpec: candidate.tarball,
+          onTemporaryRootCreated: (root) => {
+            temporaryRoot = root;
+          },
+          onInstalledPackage: (installedRoot) => {
+            const packageJsonPath = join(installedRoot, "package.json");
+            const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+              name: string;
+              version: string;
+            };
+            packageJson.version = "9.9.9";
+            writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+          },
+        }),
+      ).rejects.toThrow(/installed package identity.*version/i);
+      expect(temporaryRoot).not.toBe("");
+      expect(() => readFileSync(join(temporaryRoot, "run/package.json"))).toThrow();
+    } finally {
+      rmSync(candidate.root, { force: true, recursive: true });
+    }
+  });
+
   it("rejects an installed package path outside its task-owned root", () => {
     const root = resolve(".tmp/registry-fixture-run");
 
@@ -132,12 +234,18 @@ describe("installed registry artifact seams", () => {
 describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) => {
   it("uses only the complete public Base API and stylesheet", () => {
     const { source } = readFixture(name);
+    const baseImportSpecifiers = [...source.matchAll(/(?:from\s+)?["'](@calebhill\/base(?:\/[^"']+)*)["']/g)]
+      .map(([, specifier]) => specifier)
+      .sort();
+    const rootImport = /import\s*\{([\s\S]*?)\}\s*from\s*["']@calebhill\/base["']/.exec(source)?.[1] ?? "";
+    const importedIdentifiers = rootImport
+      .split(",")
+      .map((entry) => entry.trim().replace(/^type\s+/, ""))
+      .filter(Boolean)
+      .sort();
 
-    expect(source.match(/@calebhill\/base\/styles\.css/g)).toHaveLength(1);
-    expect(source).toMatch(/from ["']@calebhill\/base["']/);
-    for (const identifier of [...runtimeExports, ...representativeTypes]) {
-      expect(source).toMatch(new RegExp(`\\b${identifier}\\b`));
-    }
+    expect(baseImportSpecifiers).toEqual(["@calebhill/base", "@calebhill/base/styles.css"]);
+    expect(importedIdentifiers).toEqual([...runtimeExports, ...representativeTypes].sort());
     expect(source).toMatch(/href=["']#fixture["']/);
     expect(source).toMatch(/id=["']fixture["']/);
     expect(source).not.toMatch(
@@ -149,16 +257,39 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
     const { packageJson } = readFixture(name);
     const dependencyNames = Object.keys(packageJson.dependencies).sort();
     const devDependencyNames = Object.keys(packageJson.devDependencies ?? {}).sort();
+    const approved = fixtureDependencies[name as keyof typeof fixtureDependencies];
 
-    expect(dependencyNames).not.toContain("@calebhill/base");
-    expect([...dependencyNames, ...devDependencyNames]).not.toContain("tailwindcss");
-    expect([...dependencyNames, ...devDependencyNames]).not.toContain("postcss");
+    expect(dependencyNames).toEqual([...approved.dependencies]);
+    expect(devDependencyNames).toEqual([...approved.devDependencies]);
     for (const version of [
       ...Object.values(packageJson.dependencies),
       ...Object.values(packageJson.devDependencies ?? {}),
     ]) {
       expect(version).toMatch(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
     }
+  });
+
+  it("rejects an additional exact-version product or framework dependency", () => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        const packageJsonPath = join(root, "package.json");
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+          dependencies: Record<string, string>;
+        };
+        packageJson.dependencies[name === "vite-smoke" ? "next" : "photos-me"] = "1.2.3";
+        writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      }),
+    ).toThrow(/fixture dependencies/i);
+  });
+
+  it("rejects an additional Base package subpath", () => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        const sourcePath =
+          name === "vite-smoke" ? join(root, "src/main.tsx") : join(root, "app/layout.tsx");
+        writeFileSync(sourcePath, '\nimport "@calebhill/base/tokens.css";\n', { flag: "a" });
+      }),
+    ).toThrow(/fixture Base imports/i);
   });
 });
 

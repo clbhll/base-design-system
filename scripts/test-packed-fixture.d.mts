@@ -1,11 +1,21 @@
 export function assertExactPackageSpec(packageSpec: string): string;
 
+export function assertFixtureTemplateContract(
+  fixtureTemplateRoot: string,
+  fixtureTemplate: "vite-smoke" | "next-smoke",
+): void;
+
 export function assertInstalledFileParity(
   tarballPath: string,
   installedPackageRoot: string,
 ): void;
 
 export function assertPathContained(targetPath: string, taskRoot: string): void;
+
+export function assertInstalledPackageIdentity(
+  installedPackageRoot: string,
+  expectedVersion: string,
+): void;
 
 export interface InstalledFixtureOptions {
   fixtureTemplate?: "vite-smoke" | "next-smoke";

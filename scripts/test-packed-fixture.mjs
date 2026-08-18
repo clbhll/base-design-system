@@ -18,6 +18,51 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { assertPackageTarball } from "./assert-tarball-contents.mjs";
 
 const exactVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
+const expectedFixtureImports = [
+  "BASE_THEME_ATTRIBUTE",
+  "BaseTheme",
+  "Button",
+  "ButtonLink",
+  "ButtonLinkProps",
+  "ButtonProps",
+  "ButtonSize",
+  "ButtonVariant",
+  "MoreIcon",
+  "ProgressBar",
+  "ProgressBarProps",
+  "TextInput",
+  "TextInputProps",
+  "TrashIcon",
+  "isBaseTheme",
+].sort();
+const fixtureContracts = {
+  "next-smoke": {
+    dependencies: ["next", "react", "react-dom"],
+    devDependencies: ["@types/node", "@types/react", "@types/react-dom", "typescript"],
+    sourceFiles: ["app/layout.tsx", "app/page.tsx"],
+  },
+  "vite-smoke": {
+    dependencies: ["react", "react-dom"],
+    devDependencies: [
+      "@types/react",
+      "@types/react-dom",
+      "@vitejs/plugin-react",
+      "typescript",
+      "vite",
+    ],
+    sourceFiles: ["src/main.tsx"],
+  },
+};
+
+function assertSame(actual, expected, label) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${label} mismatch.\nExpected: ${expected.join(", ")}\nActual: ${actual.join(", ")}`);
+  }
+}
+
+function readPackageManifest(packageRoot) {
+  return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+}
 
 export function assertExactPackageSpec(packageSpec) {
   if (exactVersionPattern.test(packageSpec)) {
@@ -43,6 +88,73 @@ export function assertPathContained(targetPath, taskRoot) {
   if (containedPath.startsWith("..") || isAbsolute(containedPath)) {
     throw new Error(`Installed package path is outside the task-owned root: ${targetPath}`);
   }
+}
+
+export function assertInstalledPackageIdentity(installedPackageRoot, expectedVersion) {
+  const manifest = readPackageManifest(installedPackageRoot);
+  if (manifest.name !== "@calebhill/base") {
+    throw new Error(
+      `Installed package identity name mismatch. Expected: @calebhill/base\nActual: ${manifest.name}`,
+    );
+  }
+  if (manifest.version !== expectedVersion) {
+    throw new Error(
+      `Installed package identity version mismatch. Expected: ${expectedVersion}\nActual: ${manifest.version}`,
+    );
+  }
+}
+
+export function assertFixtureTemplateContract(fixtureTemplateRoot, fixtureTemplate) {
+  const contract = fixtureContracts[fixtureTemplate];
+  if (!contract) {
+    throw new Error(`Unknown installed fixture template: ${fixtureTemplate}`);
+  }
+
+  const fixturePackage = readPackageManifest(fixtureTemplateRoot);
+  assertSame(
+    Object.keys(fixturePackage.dependencies ?? {}).sort(),
+    contract.dependencies,
+    `${fixtureTemplate} fixture dependencies`,
+  );
+  assertSame(
+    Object.keys(fixturePackage.devDependencies ?? {}).sort(),
+    contract.devDependencies,
+    `${fixtureTemplate} fixture devDependencies`,
+  );
+
+  for (const version of [
+    ...Object.values(fixturePackage.dependencies ?? {}),
+    ...Object.values(fixturePackage.devDependencies ?? {}),
+  ]) {
+    if (!exactVersionPattern.test(version)) {
+      throw new Error(`${fixtureTemplate} fixture dependencies must use exact versions: ${version}`);
+    }
+  }
+
+  const source = contract.sourceFiles
+    .map((path) => readFileSync(join(fixtureTemplateRoot, path), "utf8"))
+    .join("\n");
+  const baseImports = [...source.matchAll(/(?:from\s+)?["'](@calebhill\/base(?:\/[^"']+)*)["']/g)]
+    .map(([, specifier]) => specifier)
+    .sort();
+  assertSame(
+    baseImports,
+    ["@calebhill/base", "@calebhill/base/styles.css"],
+    `${fixtureTemplate} fixture Base imports`,
+  );
+
+  const rootImports = [
+    ...source.matchAll(/import\s*\{([\s\S]*?)\}\s*from\s*["']@calebhill\/base["']/g),
+  ];
+  if (rootImports.length !== 1) {
+    throw new Error(`${fixtureTemplate} fixture must have exactly one named root Base import`);
+  }
+  const importedNames = rootImports[0][1]
+    .split(",")
+    .map((entry) => entry.trim().replace(/^type\s+/, ""))
+    .filter(Boolean)
+    .sort();
+  assertSame(importedNames, expectedFixtureImports, `${fixtureTemplate} fixture root Base imports`);
 }
 
 function listFiles(root, prefix = "") {
@@ -104,9 +216,10 @@ export async function runInstalledFixture({
 } = {}) {
   const root = resolve(packageRoot);
   const fixtureTemplateRoot = resolve(root, "test/fixtures", fixtureTemplate);
-  if (!lstatSync(fixtureTemplateRoot).isDirectory()) {
+  if (!existsSync(fixtureTemplateRoot) || !lstatSync(fixtureTemplateRoot).isDirectory()) {
     throw new Error(`Expected fixture template directory: ${fixtureTemplateRoot}`);
   }
+  assertFixtureTemplateContract(fixtureTemplateRoot, fixtureTemplate);
 
   const tempParent = resolve(root, ".tmp");
   mkdirSync(tempParent, { recursive: true });
@@ -119,8 +232,18 @@ export async function runInstalledFixture({
       packageSpec ? (isAbsolute(packageSpec) ? resolve(packageSpec) : packageSpec) : createPackageTarball(root, tempRoot),
     );
     const tarball = isAbsolute(resolvedSpec) ? resolvedSpec : undefined;
+    let expectedVersion = resolvedSpec;
     if (tarball) {
       await assertPackageTarball(tarball);
+      const artifactManifest = JSON.parse(
+        execFileSync("tar", ["-xOf", tarball, "package/package.json"], { encoding: "utf8" }),
+      );
+      if (artifactManifest.name !== "@calebhill/base") {
+        throw new Error(
+          `Candidate package identity name mismatch. Expected: @calebhill/base\nActual: ${artifactManifest.name}`,
+        );
+      }
+      expectedVersion = artifactManifest.version;
     }
 
     cpSync(fixtureTemplateRoot, runRoot, { recursive: true });
@@ -146,8 +269,9 @@ export async function runInstalledFixture({
     assertPathContained(installedPackagePath, tempRoot);
     const installedPackageRoot = realpathSync(installedPackagePath);
     assertPathContained(installedPackageRoot, tempRoot);
-    if (tarball) assertInstalledFileParity(tarball, installedPackageRoot);
     onInstalledPackage?.(installedPackageRoot);
+    assertInstalledPackageIdentity(installedPackageRoot, expectedVersion);
+    if (tarball) assertInstalledFileParity(tarball, installedPackageRoot);
 
     execFileSync("pnpm", ["typecheck"], { cwd: runRoot, stdio: "inherit" });
     execFileSync("pnpm", ["build"], { cwd: runRoot, stdio: "inherit" });
