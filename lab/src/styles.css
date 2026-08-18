@@ -1,2 +1,5 @@
 @import "../../src/styles/tokens.css";
 @import "../../src/styles/styles.css";
+@import "../../src/styles/components/button.css";
+@import "../../src/styles/components/text-input.css";
+@import "../../src/styles/components/progress-bar.css";
