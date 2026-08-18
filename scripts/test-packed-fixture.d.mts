@@ -21,6 +21,7 @@ export interface InstalledFixtureOptions {
   fixtureTemplate?: "vite-smoke" | "next-smoke";
   packageRoot?: string;
   packageSpec?: string;
+  expectedTarball?: string;
   onInstalledPackage?: (installedPackageRoot: string) => void;
   onTemporaryRootCreated?: (temporaryRoot: string) => void;
 }

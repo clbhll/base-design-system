@@ -392,6 +392,7 @@ export async function runInstalledFixture({
   fixtureTemplate = "vite-smoke",
   packageRoot = process.cwd(),
   packageSpec,
+  expectedTarball,
   onInstalledPackage,
   onTemporaryRootCreated,
 } = {}) {
@@ -453,6 +454,11 @@ export async function runInstalledFixture({
     onInstalledPackage?.(installedPackageRoot);
     assertInstalledPackageIdentity(installedPackageRoot, expectedVersion);
     if (tarball) assertInstalledFileParity(tarball, installedPackageRoot);
+    if (expectedTarball) {
+      const resolvedExpectedTarball = assertExactPackageSpec(resolve(expectedTarball));
+      await assertPackageTarball(resolvedExpectedTarball);
+      assertInstalledFileParity(resolvedExpectedTarball, installedPackageRoot);
+    }
 
     execFileSync("pnpm", ["typecheck"], { cwd: runRoot, stdio: "inherit" });
     execFileSync("pnpm", ["build"], { cwd: runRoot, stdio: "inherit" });
