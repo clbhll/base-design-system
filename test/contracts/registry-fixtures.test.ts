@@ -83,6 +83,19 @@ function mutateFixture(
   }
 }
 
+function replaceStylesheetImport(
+  root: string,
+  name: keyof typeof fixtureDependencies,
+  replacement: string,
+) {
+  const sourcePath =
+    name === "vite-smoke" ? join(root, "src/main.tsx") : join(root, "app/layout.tsx");
+  const source = readFileSync(sourcePath, "utf8");
+  const staticImport = 'import "@calebhill/base/styles.css";';
+  if (!source.includes(staticImport)) throw new Error("Expected fixture stylesheet import");
+  writeFileSync(sourcePath, source.replace(staticImport, replacement));
+}
+
 function readFixture(name: string) {
   const root = join(fixtureRoot, name);
   const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
@@ -234,18 +247,16 @@ describe("installed registry artifact seams", () => {
 describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) => {
   it("uses only the complete public Base API and stylesheet", () => {
     const { source } = readFixture(name);
-    const baseImportSpecifiers = [...source.matchAll(/(?:from\s+)?["'](@calebhill\/base(?:\/[^"']+)*)["']/g)]
-      .map(([, specifier]) => specifier)
-      .sort();
-    const rootImport = /import\s*\{([\s\S]*?)\}\s*from\s*["']@calebhill\/base["']/.exec(source)?.[1] ?? "";
-    const importedIdentifiers = rootImport
-      .split(",")
-      .map((entry) => entry.trim().replace(/^type\s+/, ""))
-      .filter(Boolean)
-      .sort();
 
-    expect(baseImportSpecifiers).toEqual(["@calebhill/base", "@calebhill/base/styles.css"]);
-    expect(importedIdentifiers).toEqual([...runtimeExports, ...representativeTypes].sort());
+    expect(() =>
+      assertFixtureTemplateContract(
+        join(fixtureRoot, name),
+        name as keyof typeof fixtureDependencies,
+      ),
+    ).not.toThrow();
+    for (const identifier of [...runtimeExports, ...representativeTypes]) {
+      expect(source).toMatch(new RegExp(`\\b${identifier}\\b`));
+    }
     expect(source).toMatch(/href=["']#fixture["']/);
     expect(source).toMatch(/id=["']fixture["']/);
     expect(source).not.toMatch(
@@ -291,6 +302,18 @@ describe.each(["vite-smoke", "next-smoke"])("%s public package fixture", (name) 
       }),
     ).toThrow(/fixture Base imports/i);
   });
+
+  it.each([
+    ["an ordinary string", 'const stylesheetSpecifier = "@calebhill/base/styles.css";'],
+    ["a comment", '// import "@calebhill/base/styles.css";'],
+    ["a dynamic import", 'void import("@calebhill/base/styles.css");'],
+  ])("does not accept %s as the static stylesheet import", (_kind, replacement) => {
+    expect(() =>
+      mutateFixture(name as keyof typeof fixtureDependencies, (root) => {
+        replaceStylesheetImport(root, name as keyof typeof fixtureDependencies, replacement);
+      }),
+    ).toThrow(/fixture Base imports/i);
+  });
 });
 
 describe("Next fixture boundary", () => {
@@ -304,5 +327,18 @@ describe("Next fixture boundary", () => {
     expect(tsconfig).not.toMatch(/"paths"|"baseUrl"/);
     expect(tsconfig).toContain(".next/dev/types/**/*.ts");
     expect(nextConfig).toMatch(/turbopack:\s*\{\s*root:\s*process\.cwd\(\)/);
+  });
+
+  it("requires the stylesheet import to remain in the root layout", () => {
+    expect(() =>
+      mutateFixture("next-smoke", (root) => {
+        replaceStylesheetImport(root, "next-smoke", "");
+        writeFileSync(
+          join(root, "app/page.tsx"),
+          '\nimport "@calebhill/base/styles.css";\n',
+          { flag: "a" },
+        );
+      }),
+    ).toThrow(/fixture Base imports/i);
   });
 });

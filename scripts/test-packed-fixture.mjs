@@ -14,6 +14,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import ts from "typescript";
 
 import { assertPackageTarball } from "./assert-tarball-contents.mjs";
 
@@ -39,7 +40,14 @@ const fixtureContracts = {
   "next-smoke": {
     dependencies: ["next", "react", "react-dom"],
     devDependencies: ["@types/node", "@types/react", "@types/react-dom", "typescript"],
-    sourceFiles: ["app/layout.tsx", "app/page.tsx"],
+    imports: {
+      "app/layout.tsx": [
+        { names: [], specifier: "@calebhill/base/styles.css" },
+      ],
+      "app/page.tsx": [
+        { names: expectedFixtureImports, specifier: "@calebhill/base" },
+      ],
+    },
   },
   "vite-smoke": {
     dependencies: ["react", "react-dom"],
@@ -50,7 +58,12 @@ const fixtureContracts = {
       "typescript",
       "vite",
     ],
-    sourceFiles: ["src/main.tsx"],
+    imports: {
+      "src/main.tsx": [
+        { names: expectedFixtureImports, specifier: "@calebhill/base" },
+        { names: [], specifier: "@calebhill/base/styles.css" },
+      ],
+    },
   },
 };
 
@@ -62,6 +75,45 @@ function assertSame(actual, expected, label) {
 
 function readPackageManifest(packageRoot) {
   return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+}
+
+function readStaticBaseImports(sourcePath) {
+  const source = readFileSync(sourcePath, "utf8");
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    source,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TSX,
+  );
+
+  return sourceFile.statements
+    .filter(ts.isImportDeclaration)
+    .flatMap((declaration) => {
+      if (!ts.isStringLiteral(declaration.moduleSpecifier)) return [];
+      const specifier = declaration.moduleSpecifier.text;
+      if (specifier !== "@calebhill/base" && !specifier.startsWith("@calebhill/base/")) {
+        return [];
+      }
+
+      if (!declaration.importClause) {
+        return [{ names: [], specifier }];
+      }
+
+      if (
+        declaration.importClause.name ||
+        !declaration.importClause.namedBindings ||
+        !ts.isNamedImports(declaration.importClause.namedBindings)
+      ) {
+        throw new Error(`Fixture Base import must use named exports only: ${sourcePath}`);
+      }
+
+      const names = declaration.importClause.namedBindings.elements
+        .map((element) => element.propertyName?.text ?? element.name.text)
+        .sort();
+      return [{ names, specifier }];
+    })
+    .sort((left, right) => left.specifier.localeCompare(right.specifier));
 }
 
 export function assertExactPackageSpec(packageSpec) {
@@ -131,30 +183,14 @@ export function assertFixtureTemplateContract(fixtureTemplateRoot, fixtureTempla
     }
   }
 
-  const source = contract.sourceFiles
-    .map((path) => readFileSync(join(fixtureTemplateRoot, path), "utf8"))
-    .join("\n");
-  const baseImports = [...source.matchAll(/(?:from\s+)?["'](@calebhill\/base(?:\/[^"']+)*)["']/g)]
-    .map(([, specifier]) => specifier)
-    .sort();
-  assertSame(
-    baseImports,
-    ["@calebhill/base", "@calebhill/base/styles.css"],
-    `${fixtureTemplate} fixture Base imports`,
-  );
-
-  const rootImports = [
-    ...source.matchAll(/import\s*\{([\s\S]*?)\}\s*from\s*["']@calebhill\/base["']/g),
-  ];
-  if (rootImports.length !== 1) {
-    throw new Error(`${fixtureTemplate} fixture must have exactly one named root Base import`);
+  for (const [sourceFile, expectedImports] of Object.entries(contract.imports)) {
+    const actualImports = readStaticBaseImports(join(fixtureTemplateRoot, sourceFile));
+    if (JSON.stringify(actualImports) !== JSON.stringify(expectedImports)) {
+      throw new Error(
+        `${fixtureTemplate} fixture Base imports mismatch in ${sourceFile}.\nExpected: ${JSON.stringify(expectedImports)}\nActual: ${JSON.stringify(actualImports)}`,
+      );
+    }
   }
-  const importedNames = rootImports[0][1]
-    .split(",")
-    .map((entry) => entry.trim().replace(/^type\s+/, ""))
-    .filter(Boolean)
-    .sort();
-  assertSame(importedNames, expectedFixtureImports, `${fixtureTemplate} fixture root Base imports`);
 }
 
 function listFiles(root, prefix = "") {
