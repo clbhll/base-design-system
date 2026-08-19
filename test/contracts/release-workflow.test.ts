@@ -864,16 +864,24 @@ describe("release workflow contract", () => {
     expect(state.tag).toBe("alpha");
     expect(pendingChangesets).toEqual([]);
     expect(archivedChangesets).toEqual(releaseChangesets);
-    expect(changelog).toContain("## 0.1.0-alpha.0");
-    expect(changelog).toContain("Add Button, ButtonLink, MoreIcon, and TrashIcon");
-    expect(changelog).toContain("Add the semantic light and dark token contract");
-    expect(changelog).toContain("Add TextInput and ProgressBar");
+    expect(changelog).toBe(`# @calebhill/base
+
+## 0.1.0-alpha.0
+
+### Minor Changes
+
+- 5b36749: Add Button, ButtonLink, MoreIcon, and TrashIcon as the first accessible Base action primitives.
+- 91e70b9: Add the semantic light and dark token contract plus opt-in typography, link, focus, press, and reduced-motion foundation styles.
+- 9e48fd5: Add TextInput and ProgressBar as accessible Base input and feedback primitives.
+`);
   });
 
   it("documents npm's required bootstrap latest tag without assigning latest to an alpha", () => {
     const runbook = readFileSync("docs/releasing.md", "utf8");
 
     expect(runbook).toContain("npm's required `latest` tag");
+    expect(runbook).toContain("no pending top-level `.changeset/*.md` files");
+    expect(runbook).toContain("the three consumed changesets retained under `.changeset/pre`");
     expect(runbook).toContain("`latest` still points to the deprecated `0.0.0` bootstrap");
     expect(runbook).toContain("An alpha must never receive `latest`");
   });

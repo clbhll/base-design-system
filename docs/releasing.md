@@ -38,7 +38,7 @@ The automation PR enters Changesets `alpha` pre-mode but deliberately leaves `pa
 For the version PR:
 
 1. Start from current `main`, run `pnpm install --frozen-lockfile`, then `pnpm version-packages`.
-2. For the first alpha, require exactly `0.1.0-alpha.0`, the intended changelog entries, no remaining release changeset files, and retained `.changeset/pre.json` alpha mode. Later alpha version PRs follow the same review and advance the prerelease number without rewriting a published version.
+2. For the first alpha, require exactly `0.1.0-alpha.0`, the intended changelog entries, no pending top-level `.changeset/*.md` files, the three consumed changesets retained under `.changeset/pre`, and retained `.changeset/pre.json` alpha mode. Later alpha version PRs follow the same review and advance the prerelease number without rewriting a published version.
 3. Run the simplification pass, `pnpm verify`, `pnpm tsc --noEmit`, and `git diff --check`. Review and merge the exact verified head.
 4. On clean, current `main`, create an annotated tag at the exact merge commit and push only that tag:
 
