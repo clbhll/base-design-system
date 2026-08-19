@@ -795,6 +795,7 @@ describe("release workflow contract", () => {
     expect(workflow.match(/id-token:\s*write/g)).toHaveLength(1);
     expect(workflow).not.toMatch(/NODE_AUTH_TOKEN|NPM_TOKEN|npm[_-]?token|secrets\./i);
     expect(workflow).toMatch(/npm publish [^\n]+ --access public --tag next --provenance/);
+    expect(workflow).toContain('candidate_path="$(realpath "${candidates[0]}")"');
     expect(workflow).toMatch(/sha256sum[\s\S]*needs\.verify\.outputs\.digest/);
     expect(workflow).toMatch(/tar -xOf [^\n]+ package\/package\.json/);
     expect(workflow).toMatch(/candidate_manifest\.version[\s\S]*RELEASE_VERSION/);

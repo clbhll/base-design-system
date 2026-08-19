@@ -84,7 +84,7 @@ jobs:
         run: |
           mapfile -t candidates < <(find candidate -maxdepth 1 -type f -name '*.tgz' -print)
           test "${#candidates[@]}" -eq 1
-          candidate_path="${candidates[0]}"
+          candidate_path="$(realpath "${candidates[0]}")"
           actual_digest="$(sha256sum "$candidate_path" | awk '{print $1}')"
           test "$actual_digest" = "${{ needs.verify.outputs.digest }}"
           manifest_path="candidate/candidate-package.json"
