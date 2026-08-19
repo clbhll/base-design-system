@@ -152,7 +152,7 @@ export function assertProvenanceAttestations({
   if (
     definition?.buildType !== "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1" ||
     workflow?.repository !== "https://github.com/clbhll/base-design-system" ||
-    workflow?.path !== "/.github/workflows/release.yml" ||
+    workflow?.path !== ".github/workflows/release.yml" ||
     workflow?.ref !== expectedRef
   ) {
     throw new Error("Provenance workflow identity mismatch");
@@ -346,9 +346,15 @@ export async function verifyRegistryPackage({
   }
 }
 
+export function parseRegistryVersionArguments(arguments_) {
+  const values = arguments_.filter((argument) => argument !== "--");
+  if (values.length === 0) throw new Error("Provide the exact registry version to verify");
+  if (values.length !== 1) throw new Error("Provide exactly one registry version to verify");
+  return values[0];
+}
+
 async function main() {
-  const version = process.argv[2];
-  if (!version) throw new Error("Provide the exact registry version to verify");
+  const version = parseRegistryVersionArguments(process.argv.slice(2));
   const expectedCommit = process.env.GITHUB_SHA ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const result = await verifyRegistryPackage({ version, expectedCommit });
   process.stdout.write(`${JSON.stringify(result)}\n`);

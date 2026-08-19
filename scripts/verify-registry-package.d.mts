@@ -39,6 +39,7 @@ export function assertProvenanceAttestations(options: {
   integrity: string;
   expectedCommit: string;
 }): void;
+export function parseRegistryVersionArguments(arguments_: string[]): string;
 export function retryRegistryLookup<T>(
   operation: () => Promise<T>,
   options?: {
