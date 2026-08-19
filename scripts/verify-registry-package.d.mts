@@ -40,6 +40,11 @@ export function assertProvenanceAttestations(options: {
   expectedCommit: string;
 }): void;
 export function parseRegistryVersionArguments(arguments_: string[]): string;
+export function resolveExpectedReleaseCommit(options: {
+  version: string;
+  githubSha?: string;
+  revParse?: (revision: string) => string;
+}): string;
 export function retryRegistryLookup<T>(
   operation: () => Promise<T>,
   options?: {

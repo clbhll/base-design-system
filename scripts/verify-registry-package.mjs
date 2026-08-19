@@ -353,9 +353,17 @@ export function parseRegistryVersionArguments(arguments_) {
   return values[0];
 }
 
+export function resolveExpectedReleaseCommit({
+  version,
+  githubSha = process.env.GITHUB_SHA,
+  revParse = (revision) => execFileSync("git", ["rev-parse", revision], { encoding: "utf8" }).trim(),
+}) {
+  return githubSha || revParse(`v${version}^{commit}`);
+}
+
 async function main() {
   const version = parseRegistryVersionArguments(process.argv.slice(2));
-  const expectedCommit = process.env.GITHUB_SHA ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  const expectedCommit = resolveExpectedReleaseCommit({ version });
   const result = await verifyRegistryPackage({ version, expectedCommit });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }

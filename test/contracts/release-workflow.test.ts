@@ -25,6 +25,7 @@ import {
   assertProvenanceAttestations,
   assertTarballIntegrity,
   parseRegistryVersionArguments,
+  resolveExpectedReleaseCommit,
   retryRegistryLookup,
   verifyRegistryPackage,
 } from "../../scripts/verify-registry-package.mjs";
@@ -411,6 +412,20 @@ describe("deterministic candidate preparation", () => {
 });
 
 describe("exact registry artifact verification", () => {
+  it("uses the workflow commit in CI and the immutable version tag elsewhere", () => {
+    const workflowCommit = "a".repeat(40);
+    const taggedCommit = "b".repeat(40);
+    const revParse = vi.fn(() => taggedCommit);
+
+    expect(resolveExpectedReleaseCommit({ version, githubSha: workflowCommit, revParse })).toBe(
+      workflowCommit,
+    );
+    expect(revParse).not.toHaveBeenCalled();
+
+    expect(resolveExpectedReleaseCommit({ version, githubSha: "", revParse })).toBe(taggedCommit);
+    expect(revParse).toHaveBeenCalledExactlyOnceWith(`v${version}^{commit}`);
+  });
+
   it("accepts the documented pnpm separator before the exact registry version", () => {
     expect(parseRegistryVersionArguments([version])).toBe(version);
     expect(parseRegistryVersionArguments(["--", version])).toBe(version);
