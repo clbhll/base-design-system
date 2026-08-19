@@ -831,28 +831,58 @@ describe("release workflow contract", () => {
     }
   });
 
-  it("keeps the ordinary verify gate offline and exposes release-only scripts", () => {
+  it("versions the first alpha while keeping the ordinary verify gate offline", () => {
     const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
       scripts: Record<string, string>;
       version: string;
     };
-    expect(manifest.version).toBe("0.0.0");
+    expect(manifest.version).toBe(version);
     expect(manifest.scripts["release:prepare"]).toBe("node scripts/prepare-release.mjs");
     expect(manifest.scripts["fixture:registry"]).toBe("node scripts/verify-registry-package.mjs");
     expect(manifest.scripts.verify).not.toMatch(/fixture:registry|verify-registry-package/);
   });
 
-  it("is in alpha pre-mode without consuming release changesets", () => {
+  it("keeps alpha pre-mode and consumes exactly the intended release changesets", () => {
     const state = JSON.parse(readFileSync(".changeset/pre.json", "utf8")) as {
       mode: string;
       tag: string;
     };
-    expect(state.mode).toBe("pre");
-    expect(state.tag).toBe("alpha");
-    expect([
+    const releaseChangesets = [
       "brave-actions-arrive.md",
       "bright-bases-bloom.md",
       "calm-primitives-grow.md",
-    ].every((file) => existsSync(join(".changeset", file)))).toBe(true);
+    ];
+    const pendingChangesets = readdirSync(".changeset")
+      .filter((file) => file.endsWith(".md") && file !== "README.md")
+      .sort();
+    const archivedChangesets = readdirSync(".changeset/pre")
+      .filter((file) => file.endsWith(".md"))
+      .sort();
+    const changelog = readFileSync("CHANGELOG.md", "utf8");
+
+    expect(state.mode).toBe("pre");
+    expect(state.tag).toBe("alpha");
+    expect(pendingChangesets).toEqual([]);
+    expect(archivedChangesets).toEqual(releaseChangesets);
+    expect(changelog).toBe(`# @calebhill/base
+
+## 0.1.0-alpha.0
+
+### Minor Changes
+
+- 5b36749: Add Button, ButtonLink, MoreIcon, and TrashIcon as the first accessible Base action primitives.
+- 91e70b9: Add the semantic light and dark token contract plus opt-in typography, link, focus, press, and reduced-motion foundation styles.
+- 9e48fd5: Add TextInput and ProgressBar as accessible Base input and feedback primitives.
+`);
+  });
+
+  it("documents npm's required bootstrap latest tag without assigning latest to an alpha", () => {
+    const runbook = readFileSync("docs/releasing.md", "utf8");
+
+    expect(runbook).toContain("npm's required `latest` tag");
+    expect(runbook).toContain("no pending top-level `.changeset/*.md` files");
+    expect(runbook).toContain("the three consumed changesets retained under `.changeset/pre`");
+    expect(runbook).toContain("`latest` still points to the deprecated `0.0.0` bootstrap");
+    expect(runbook).toContain("An alpha must never receive `latest`");
   });
 });

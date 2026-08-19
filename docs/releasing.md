@@ -16,7 +16,7 @@ npm requires the package to exist before a trusted publisher can be configured. 
    npm publish <exact-tarball.tgz> --access public --tag bootstrap --provenance=false
    ```
 
-4. Confirm `@calebhill/base@0.0.0` exists only under `bootstrap`; `latest` and `next` must not point to it.
+4. Confirm `bootstrap` and npm's required `latest` tag both point to `@calebhill/base@0.0.0`, while `next` is absent. npm requires every package document to retain a `latest` tag, including a newly bootstrapped package; do not move `latest` to an alpha.
 5. With npm 11.19.0 and account-level 2FA enabled, configure only the release workflow and publish permission:
 
    ```sh
@@ -38,7 +38,7 @@ The automation PR enters Changesets `alpha` pre-mode but deliberately leaves `pa
 For the version PR:
 
 1. Start from current `main`, run `pnpm install --frozen-lockfile`, then `pnpm version-packages`.
-2. For the first alpha, require exactly `0.1.0-alpha.0`, the intended changelog entries, no remaining release changeset files, and retained `.changeset/pre.json` alpha mode. Later alpha version PRs follow the same review and advance the prerelease number without rewriting a published version.
+2. For the first alpha, require exactly `0.1.0-alpha.0`, the intended changelog entries, no pending top-level `.changeset/*.md` files, the three consumed changesets retained under `.changeset/pre`, and retained `.changeset/pre.json` alpha mode. Later alpha version PRs follow the same review and advance the prerelease number without rewriting a published version.
 3. Run the simplification pass, `pnpm verify`, `pnpm tsc --noEmit`, and `git diff --check`. Review and merge the exact verified head.
 4. On clean, current `main`, create an annotated tag at the exact merge commit and push only that tag:
 
@@ -73,7 +73,7 @@ npm deprecate @calebhill/base@0.0.0 "Bootstrap-only package; use the current nex
 npm dist-tag rm @calebhill/base bootstrap
 ```
 
-Confirm `next` points to the verified alpha and `latest` is absent or still points only to a stable release.
+Confirm `next` points to the verified alpha and `latest` still points to the deprecated `0.0.0` bootstrap until a separately approved stable release replaces it. An alpha must never receive `latest`.
 
 ## Failure and rollback policy
 
