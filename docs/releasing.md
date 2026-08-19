@@ -16,7 +16,7 @@ npm requires the package to exist before a trusted publisher can be configured. 
    npm publish <exact-tarball.tgz> --access public --tag bootstrap --provenance=false
    ```
 
-4. Confirm `@calebhill/base@0.0.0` exists only under `bootstrap`; `latest` and `next` must not point to it.
+4. Confirm `bootstrap` and npm's required `latest` tag both point to `@calebhill/base@0.0.0`, while `next` is absent. npm requires every package document to retain a `latest` tag, including a newly bootstrapped package; do not move `latest` to an alpha.
 5. With npm 11.19.0 and account-level 2FA enabled, configure only the release workflow and publish permission:
 
    ```sh
@@ -73,7 +73,7 @@ npm deprecate @calebhill/base@0.0.0 "Bootstrap-only package; use the current nex
 npm dist-tag rm @calebhill/base bootstrap
 ```
 
-Confirm `next` points to the verified alpha and `latest` is absent or still points only to a stable release.
+Confirm `next` points to the verified alpha and `latest` still points to the deprecated `0.0.0` bootstrap until a separately approved stable release replaces it. An alpha must never receive `latest`.
 
 ## Failure and rollback policy
 
