@@ -24,6 +24,7 @@ import {
   assertRegistryMetadata,
   assertProvenanceAttestations,
   assertTarballIntegrity,
+  parseRegistryVersionArguments,
   retryRegistryLookup,
   verifyRegistryPackage,
 } from "../../scripts/verify-registry-package.mjs";
@@ -109,7 +110,7 @@ function provenanceAttestations(overrides: Record<string, unknown> = {}) {
           workflow: {
             ref: `refs/tags/v${version}`,
             repository: "https://github.com/clbhll/base-design-system",
-            path: "/.github/workflows/release.yml",
+            path: ".github/workflows/release.yml",
           },
         },
         resolvedDependencies: [
@@ -410,6 +411,15 @@ describe("deterministic candidate preparation", () => {
 });
 
 describe("exact registry artifact verification", () => {
+  it("accepts the documented pnpm separator before the exact registry version", () => {
+    expect(parseRegistryVersionArguments([version])).toBe(version);
+    expect(parseRegistryVersionArguments(["--", version])).toBe(version);
+    expect(() => parseRegistryVersionArguments([])).toThrow(/exact registry version/i);
+    expect(() => parseRegistryVersionArguments([version, "unexpected"])).toThrow(
+      /exactly one/i,
+    );
+  });
+
   it("accepts exact official metadata with next, SRI, provenance, and signatures", () => {
     const state = registryMetadata();
     expect(() => assertRegistryMetadata({ ...state, version })).not.toThrow();
@@ -478,8 +488,8 @@ describe("exact registry artifact verification", () => {
       };
     };
     for (const wrongPath of [
-      ".github/workflows/release.yml",
-      "/.github/workflows/other.yml",
+      "/.github/workflows/release.yml",
+      ".github/workflows/other.yml",
     ]) {
       provenance.predicate.buildDefinition.externalParameters.workflow.path = wrongPath;
       document.attestations[1].bundle.dsseEnvelope.payload = Buffer.from(JSON.stringify(provenance)).toString("base64");
