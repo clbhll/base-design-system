@@ -1,6 +1,6 @@
 # Base Design System
 
-`@calebhill/base` is a project-agnostic React design system for Caleb Hill's web projects. It provides framework-independent package APIs, semantic tokens, accessible components, and compiled CSS that requires no consumer Tailwind configuration.
+`@calebhill/base` is a reusable React design system for building consistent, accessible interfaces across products, teams, and brands. It provides semantic design tokens, accessible components, stable package APIs, and compiled CSS without requiring consumer Tailwind configuration.
 
 Read the [AI-first design contract](DESIGN.md) before changing tokens, components, motion, accessibility behavior, or public APIs. Repository workflow and validation commands live in [AGENTS.md](AGENTS.md).
 
@@ -32,7 +32,7 @@ Import only the token contract when a consumer supplies all component and founda
 import "@calebhill/base/tokens.css";
 ```
 
-Override semantic properties through normal CSS cascade. For example, CalebHill's light theme retains its product accent without creating another Base theme:
+Apply product-specific branding by overriding semantic properties through the normal CSS cascade, without creating a separate Base theme:
 
 ```css
 [data-base-theme="light"] {
@@ -74,9 +74,9 @@ pnpm fixture:registry -- 0.1.0-alpha.0
 
 See [docs/releasing.md](docs/releasing.md) for the Changesets, trusted-publishing, verification, and rollback runbook. Public alphas publish under npm's `next` tag; `StatusTag` remains documentation-only and is never consumable from the package.
 
-## Roadmap
+## Status
 
-CLB-691 and CLB-692 established the package and foundations. CLB-694 and CLB-695 added the first public action, input, and feedback primitives. CLB-716 added the front-facing component lab, including a lab-only `StatusTag` that is never exported or included in the npm package. CLB-705 owns the alpha release process.
+Base is in public alpha. Its foundations and first action, input, and feedback primitives are available, with the component lab documenting current APIs and behavior.
 
 ## License
 
