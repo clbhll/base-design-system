@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import postcss, { type Rule } from "postcss";
 import { axe } from "vitest-axe";
@@ -114,7 +114,9 @@ describe("alpha component lab", () => {
   });
 
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
-    const appSource = readFileSync("lab/src/app.tsx", "utf8");
+    const labSource = globSync("lab/src/**/*.tsx")
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
     const packageSource = readFileSync("src/index.ts", "utf8");
     const packageCss = [
       "src/styles/tokens.css",
@@ -127,8 +129,8 @@ describe("alpha component lab", () => {
       .join("\n");
     const packageManifest = readFileSync("package.json", "utf8");
 
-    expect(appSource).toContain('from "@calebhill/base"');
-    expect(appSource).toContain('import "@calebhill/base/styles.css"');
+    expect(labSource).toContain('from "@calebhill/base"');
+    expect(labSource).toContain('import "@calebhill/base/styles.css"');
     for (const forbiddenImport of [
       "../../src",
       "src/components",
@@ -138,7 +140,7 @@ describe("alpha component lab", () => {
       "photos-me",
       "calebhill.me",
     ]) {
-      expect(appSource.toLowerCase()).not.toContain(forbiddenImport);
+      expect(labSource.toLowerCase()).not.toContain(forbiddenImport);
     }
 
     for (const packageArtifact of [packageSource, packageCss, packageManifest]) {
