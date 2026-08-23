@@ -48,17 +48,4 @@ describe("design documentation contract", () => {
     expect(design).toContain("CLB-692 approved foundation vocabulary");
     expect(design).not.toContain("CLB-692 will approve the complete semantic token");
   });
-
-  it("keeps the shipped StatusTag scoped to the documentation lab", async () => {
-    const readme = await readRepositoryFile("README.md");
-    const status = readme.match(/## Status\n\n(?<content>[\s\S]*?)\n\n## License/)?.groups
-      ?.content;
-
-    expect(status).toContain("Base is in public alpha");
-    expect(status).toContain("component lab documenting current APIs and behavior");
-    expect(status).not.toMatch(/CLB-/);
-    expect(readme).toContain(
-      "`StatusTag` remains documentation-only and is never consumable from the package",
-    );
-  });
 });

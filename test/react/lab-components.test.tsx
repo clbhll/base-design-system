@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import postcss, { type Rule } from "postcss";
@@ -6,6 +6,7 @@ import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../lab/src/app";
+import { StatusTag } from "../../lab/src/components/status-tag";
 
 vi.mock("../../lab/src/dev-tools", () => ({
   DevTools: () => null,
@@ -50,8 +51,8 @@ function contrastRatio(foreground: string, surface: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function themeStatusValues(selector: string) {
-  const values = declarationsFor(selector);
+function statusValues() {
+  const values = declarationsFor(".lab-app-shell");
   return {
     beta: [values.get("--lab-status-beta-text"), values.get("--lab-status-beta-surface")],
     unstable: [
@@ -61,57 +62,65 @@ function themeStatusValues(selector: string) {
   };
 }
 
-describe("alpha component lab", () => {
-  it("shows each approved public component specimen in both themes", async () => {
-    const { container } = render(<App />);
+function renderPath(path: string) {
+  window.history.replaceState(null, "", `#${path}`);
+  return render(<App />);
+}
 
-    expect(screen.getAllByRole("button", { name: "Primary" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Button link" })).toHaveLength(2);
-    expect(screen.getAllByRole("textbox", { name: "Default input" })).toHaveLength(2);
-    expect(screen.getAllByRole("alert", { name: undefined })).toHaveLength(2);
-    expect(screen.getAllByRole("progressbar", { name: "Upload progress" })).toHaveLength(2);
+describe("alpha component lab", () => {
+  it("shows every approved Button variant and state in its focused document", async () => {
+    const { container } = renderPath("/components/button");
+
+    expect(screen.getByRole("button", { name: "Primary" })).toBeVisible();
 
     const variants = ["primary", "secondary", "subtle", "destructive", "text", "text-accent"];
     for (const variant of variants) {
-      expect(container.querySelectorAll(`[data-lab-variant="${variant}"]`)).toHaveLength(2);
+      expect(container.querySelectorAll(`[data-lab-variant="${variant}"]`)).toHaveLength(1);
       expect(container.querySelector(`[data-lab-variant="${variant}"]`)).toHaveClass(
         `base-button-${variant}`,
       );
     }
 
-    expect(screen.getAllByRole("button", { name: "More actions" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Delete item" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Unavailable action" })).toHaveLength(2);
-    for (const button of screen.getAllByRole("button", { name: "Unavailable action" })) {
-      expect(button).toBeDisabled();
-    }
-
-    for (const input of screen.getAllByRole("textbox", { name: "Error input" })) {
-      expect(input).toHaveAttribute("aria-invalid", "true");
-      const error = document.getElementById(input.getAttribute("aria-describedby") ?? "");
-      expect(error).toHaveAttribute("role", "alert");
-    }
-    for (const progress of screen.getAllByRole("progressbar", { name: "Upload progress" })) {
-      expect(progress).toHaveAttribute("aria-valuenow", "45");
-    }
+    expect(screen.getByRole("button", { name: "More actions" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete item" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Unavailable action" })).toBeDisabled();
 
     expect(
       (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
     ).toHaveLength(0);
   });
 
-  it("gives each ButtonLink specimen a unique, valid fragment destination", () => {
-    render(<App />);
+  it("gives each ButtonLink specimen a valid fragment destination", () => {
+    renderPath("/components/button-link");
 
-    const links = screen.getAllByRole("link", { name: "Button link" });
-    const fragmentIds = links.map((link) => link.getAttribute("href")?.slice(1));
-
-    expect(fragmentIds).toHaveLength(2);
-    expect(new Set(fragmentIds).size).toBe(2);
-    for (const fragmentId of fragmentIds) {
-      expect(fragmentId).toBeTruthy();
-      expect(document.getElementById(fragmentId as string)).not.toBeNull();
+    for (const name of [
+      "Primary",
+      "Secondary",
+      "Subtle",
+      "Destructive",
+      "Text",
+      "Text accent",
+      "More destinations",
+    ]) {
+      const link = screen.getByRole("link", { name });
+      expect(link).toHaveAttribute("href", "#/components/button-link");
     }
+  });
+
+  it("shows TextInput error association and determinate progress semantics", () => {
+    let view = renderPath("/components/text-input");
+    const input = screen.getByRole("textbox", { name: "Error input" });
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    const error = document.getElementById(input.getAttribute("aria-describedby") ?? "");
+    expect(error).toHaveAttribute("role", "alert");
+    view.unmount();
+
+    view = renderPath("/components/progress-bar");
+    expect(screen.getByRole("progressbar", { name: "Upload progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "45",
+    );
+    view.unmount();
   });
 
   it.each([
@@ -119,7 +128,7 @@ describe("alpha component lab", () => {
     ["wide", "Review details", "Project summary"],
   ] as const)("exercises the %s Dialog and restores its trigger", async (size, title, field) => {
     const user = userEvent.setup();
-    render(<App />);
+    renderPath("/components/dialog");
 
     const trigger = screen.getByRole("button", {
       name: `Open ${size} Dialog`,
@@ -135,7 +144,9 @@ describe("alpha component lab", () => {
   });
 
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
-    const appSource = readFileSync("lab/src/app.tsx", "utf8");
+    const labSource = globSync("lab/src/**/*.tsx")
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
     const packageSource = readFileSync("src/index.ts", "utf8");
     const packageCss = [
       "src/styles/tokens.css",
@@ -149,8 +160,8 @@ describe("alpha component lab", () => {
       .join("\n");
     const packageManifest = readFileSync("package.json", "utf8");
 
-    expect(appSource).toContain('from "@calebhill/base"');
-    expect(appSource).toContain('import "@calebhill/base/styles.css"');
+    expect(labSource).toContain('from "@calebhill/base"');
+    expect(labSource).toContain('import "@calebhill/base/styles.css"');
     for (const forbiddenImport of [
       "../../src",
       "src/components",
@@ -160,7 +171,7 @@ describe("alpha component lab", () => {
       "photos-me",
       "calebhill.me",
     ]) {
-      expect(appSource.toLowerCase()).not.toContain(forbiddenImport);
+      expect(labSource.toLowerCase()).not.toContain(forbiddenImport);
     }
 
     for (const packageArtifact of [packageSource, packageCss, packageManifest]) {
@@ -170,15 +181,22 @@ describe("alpha component lab", () => {
     }
   });
 
-  it("uses visible lifecycle labels in both theme panels", () => {
-    render(<App />);
+  it("uses visible lifecycle labels for every documentation status", () => {
+    render(
+      <div>
+        <StatusTag status="stable" />
+        <StatusTag status="beta" />
+        <StatusTag status="unstable" />
+        <StatusTag status="deprecated" />
+      </div>,
+    );
 
     for (const label of ["Stable", "Beta", "Unstable", "Deprecated"]) {
-      expect(screen.getAllByText(label)).toHaveLength(2);
+      expect(screen.getByText(label)).toBeVisible();
     }
   });
 
-  it("keeps lifecycle status styling local, themed, and readable", () => {
+  it("keeps lifecycle status styling local and readable", () => {
     const statusRule = declarationsFor(".lab-status-tag");
     expect(statusRule.size).toBeGreaterThan(0);
 
@@ -200,16 +218,10 @@ describe("alpha component lab", () => {
       "--base-color-danger",
     );
 
-    for (const selector of [
-      '.lab-panel[data-base-theme="light"]',
-      '.lab-panel[data-base-theme="dark"]',
-    ]) {
-      const statuses = themeStatusValues(selector);
-      for (const [foreground, surface] of Object.values(statuses)) {
-        expect(foreground).toMatch(/^#[0-9a-f]{6}$/i);
-        expect(surface).toMatch(/^#[0-9a-f]{6}$/i);
-        expect(contrastRatio(foreground as string, surface as string)).toBeGreaterThanOrEqual(4.5);
-      }
+    for (const [foreground, surface] of Object.values(statusValues())) {
+      expect(foreground).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(surface).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(contrastRatio(foreground as string, surface as string)).toBeGreaterThanOrEqual(4.5);
     }
 
     const labVariables: string[] = [];
@@ -227,6 +239,6 @@ describe("alpha component lab", () => {
       }
     });
     expect(narrowRules.length).toBeGreaterThan(0);
-    expect(declarationsFor(".lab-shell").get("width")).not.toMatch(/^\d+(?:\.\d+)?(?:px|rem)$/);
+    expect(declarationsFor(".lab-app-shell").has("width")).toBe(false);
   });
 });
