@@ -2,6 +2,9 @@ import {
   BASE_THEME_ATTRIBUTE,
   Button,
   ButtonLink,
+  Dialog,
+  DialogFooter,
+  DialogHeading,
   MoreIcon,
   ProgressBar,
   TextInput,
@@ -9,7 +12,7 @@ import {
   type BaseTheme,
   type ButtonVariant,
 } from "@calebhill/base";
-import type { CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import "@calebhill/base/styles.css";
 
 import { DevTools } from "./dev-tools";
@@ -110,6 +113,86 @@ function FoundationSpecimens({ theme }: { theme: BaseTheme }) {
   );
 }
 
+function DialogExhibit({ theme }: { theme: BaseTheme }) {
+  const compact = theme === "light";
+  const size = compact ? "compact" : "wide";
+  const [open, setOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const portalRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <section className="lab-component-section">
+      <h3 className="base-type-heading-sm">Dialog</h3>
+      <Button onClick={() => setOpen(true)} variant="secondary">
+        Open {size} Dialog
+      </Button>
+      <p className="base-type-body-sm">
+        {compact
+          ? "Escape and backdrop clicks dismiss, then focus returns to this trigger."
+          : "Backdrop dismissal is disabled. The extra section demonstrates size layout motion."}
+      </p>
+      <code className="lab-code-sample base-type-mono">
+        {`<Dialog open={open} onOpenChange={setOpen} size="${size}">`}
+      </code>
+      <div className="lab-dialog-portal" ref={portalRef} />
+
+      <Dialog
+        className="lab-dialog-content"
+        dismissOnBackdrop={compact}
+        layoutDependency={compact ? undefined : showDetails ? "expanded" : "collapsed"}
+        onOpenChange={setOpen}
+        open={open}
+        portalContainer={portalRef.current}
+        size={size}
+      >
+        <DialogHeading
+          subtitle={
+            compact
+              ? "Update the public details shown with your work."
+              : "Check the content and expand the supporting information before publishing."
+          }
+          title={compact ? "Edit profile" : "Review details"}
+        />
+        <div className="lab-dialog-fields">
+          {compact ? (
+            <>
+              <TextInput aria-label="Display name" defaultValue="Caleb Hill" />
+              <TextInput aria-label="Email" defaultValue="hello@example.com" />
+            </>
+          ) : (
+            <>
+              <TextInput
+                aria-label="Project summary"
+                defaultValue="A focused Dialog system for Base."
+              />
+              <Button
+                onClick={() => setShowDetails((visible) => !visible)}
+                variant="subtle"
+              >
+                {showDetails ? "Hide supporting details" : "Show supporting details"}
+              </Button>
+              {showDetails ? (
+                <div className="lab-dialog-expanded base-type-body-sm">
+                  <p>Focus remains contained as this section changes the Dialog height.</p>
+                  <a className="base-link" href="#dialog-motion-guidance">
+                    Review motion guidance
+                  </a>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button onClick={() => setOpen(false)} variant="secondary">
+            Close {size} Dialog
+          </Button>
+          <Button onClick={() => setOpen(false)}>Save</Button>
+        </DialogFooter>
+      </Dialog>
+    </section>
+  );
+}
+
 function ComponentPanel({ theme }: { theme: BaseTheme }) {
   return (
     <section className="lab-panel" {...{ [BASE_THEME_ATTRIBUTE]: theme }}>
@@ -150,6 +233,8 @@ function ComponentPanel({ theme }: { theme: BaseTheme }) {
         </div>
         <code className="lab-code-sample base-type-mono">{`<TextInput error="This field needs attention." />`}</code>
       </section>
+
+      <DialogExhibit theme={theme} />
 
       <section className="lab-component-section">
         <h3 className="base-type-heading-sm">Progress</h3>

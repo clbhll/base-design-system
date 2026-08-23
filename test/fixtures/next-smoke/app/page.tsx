@@ -4,6 +4,9 @@ import {
   BASE_THEME_ATTRIBUTE,
   Button,
   ButtonLink,
+  Dialog,
+  DialogFooter,
+  DialogHeading,
   MoreIcon,
   ProgressBar,
   TextInput,
@@ -14,6 +17,10 @@ import {
   type ButtonProps,
   type ButtonSize,
   type ButtonVariant,
+  type DialogFooterProps,
+  type DialogHeadingProps,
+  type DialogProps,
+  type DialogSize,
   type ProgressBarProps,
   type TextInputProps,
 } from "@calebhill/base";
@@ -22,6 +29,14 @@ const buttonProps = { type: "button" } satisfies ButtonProps;
 const buttonLinkProps = { target: "_self" } satisfies ButtonLinkProps;
 const buttonSize = "default" satisfies ButtonSize;
 const buttonVariant = "primary" satisfies ButtonVariant;
+const dialogSize = "wide" satisfies DialogSize;
+const dialogProps = {
+  onOpenChange: (_open: boolean) => undefined,
+  open: false,
+  size: dialogSize,
+} satisfies Omit<DialogProps, "children">;
+const dialogHeadingProps = { title: "Fixture dialog" } satisfies DialogHeadingProps;
+const dialogFooterProps = { className: "fixture-footer" } satisfies DialogFooterProps;
 const theme: BaseTheme = isBaseTheme("dark") ? "dark" : "light";
 const textInputProps: TextInputProps = {
   "aria-label": "Caption",
@@ -47,6 +62,12 @@ export default function Page() {
       </Button>
       <TextInput {...textInputProps} />
       <ProgressBar {...progressBarProps} />
+      <Dialog {...dialogProps}>
+        <DialogHeading {...dialogHeadingProps} />
+        <DialogFooter {...dialogFooterProps}>
+          <Button>Close</Button>
+        </DialogFooter>
+      </Dialog>
     </main>
   );
 }

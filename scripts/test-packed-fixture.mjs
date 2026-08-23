@@ -23,6 +23,9 @@ const expectedFixtureRuntimeImports = [
   "BASE_THEME_ATTRIBUTE",
   "Button",
   "ButtonLink",
+  "Dialog",
+  "DialogFooter",
+  "DialogHeading",
   "MoreIcon",
   "ProgressBar",
   "TextInput",
@@ -35,12 +38,16 @@ const expectedFixtureTypeImports = [
   "ButtonProps",
   "ButtonSize",
   "ButtonVariant",
+  "DialogFooterProps",
+  "DialogHeadingProps",
+  "DialogProps",
+  "DialogSize",
   "ProgressBarProps",
   "TextInputProps",
 ].sort();
 const fixtureContracts = {
   "next-smoke": {
-    dependencies: ["next", "react", "react-dom"],
+    dependencies: ["motion", "next", "react", "react-dom"],
     devDependencies: ["@types/node", "@types/react", "@types/react-dom", "typescript"],
     imports: {
       "app/layout.tsx": [
@@ -62,7 +69,7 @@ const fixtureContracts = {
     },
   },
   "vite-smoke": {
-    dependencies: ["react", "react-dom"],
+    dependencies: ["motion", "react", "react-dom"],
     devDependencies: [
       "@types/react",
       "@types/react-dom",

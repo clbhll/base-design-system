@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import postcss, { type Rule } from "postcss";
 import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -113,6 +114,26 @@ describe("alpha component lab", () => {
     }
   });
 
+  it.each([
+    ["compact", "Edit profile", "Display name"],
+    ["wide", "Review details", "Project summary"],
+  ] as const)("exercises the %s Dialog and restores its trigger", async (size, title, field) => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const trigger = screen.getByRole("button", {
+      name: `Open ${size} Dialog`,
+    });
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog", { name: title });
+    expect(dialog).toHaveClass(`base-dialog-${size}`);
+    expect(screen.getByRole("textbox", { name: field })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: `Close ${size} Dialog` }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
     const appSource = readFileSync("lab/src/app.tsx", "utf8");
     const packageSource = readFileSync("src/index.ts", "utf8");
@@ -122,6 +143,7 @@ describe("alpha component lab", () => {
       "src/styles/components/button.css",
       "src/styles/components/text-input.css",
       "src/styles/components/progress-bar.css",
+      "src/styles/components/dialog.css",
     ]
       .map((path) => readFileSync(path, "utf8"))
       .join("\n");
