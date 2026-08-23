@@ -5,6 +5,7 @@ import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../lab/src/app";
+import { StatusTag } from "../../lab/src/components/status-tag";
 
 vi.mock("../../lab/src/dev-tools", () => ({
   DevTools: () => null,
@@ -60,57 +61,67 @@ function themeStatusValues(selector: string) {
   };
 }
 
-describe("alpha component lab", () => {
-  it("shows each approved public component specimen in both themes", async () => {
-    const { container } = render(<App />);
+function renderPath(path: string) {
+  window.history.replaceState(null, "", `#${path}`);
+  return render(<App />);
+}
 
-    expect(screen.getAllByRole("button", { name: "Primary" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Button link" })).toHaveLength(2);
-    expect(screen.getAllByRole("textbox", { name: "Default input" })).toHaveLength(2);
-    expect(screen.getAllByRole("alert", { name: undefined })).toHaveLength(2);
-    expect(screen.getAllByRole("progressbar", { name: "Upload progress" })).toHaveLength(2);
+describe("alpha component lab", () => {
+  it("shows every approved Button variant and state in its focused document", async () => {
+    const { container } = renderPath("/components/button");
+
+    expect(screen.getByRole("button", { name: "Primary" })).toBeVisible();
 
     const variants = ["primary", "secondary", "subtle", "destructive", "text", "text-accent"];
     for (const variant of variants) {
-      expect(container.querySelectorAll(`[data-lab-variant="${variant}"]`)).toHaveLength(2);
+      expect(container.querySelectorAll(`[data-lab-variant="${variant}"]`)).toHaveLength(1);
       expect(container.querySelector(`[data-lab-variant="${variant}"]`)).toHaveClass(
         `base-button-${variant}`,
       );
     }
 
-    expect(screen.getAllByRole("button", { name: "More actions" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Delete item" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Unavailable action" })).toHaveLength(2);
-    for (const button of screen.getAllByRole("button", { name: "Unavailable action" })) {
-      expect(button).toBeDisabled();
-    }
-
-    for (const input of screen.getAllByRole("textbox", { name: "Error input" })) {
-      expect(input).toHaveAttribute("aria-invalid", "true");
-      const error = document.getElementById(input.getAttribute("aria-describedby") ?? "");
-      expect(error).toHaveAttribute("role", "alert");
-    }
-    for (const progress of screen.getAllByRole("progressbar", { name: "Upload progress" })) {
-      expect(progress).toHaveAttribute("aria-valuenow", "45");
-    }
+    expect(screen.getByRole("button", { name: "More actions" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete item" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Unavailable action" })).toBeDisabled();
 
     expect(
       (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
     ).toHaveLength(0);
   });
 
-  it("gives each ButtonLink specimen a unique, valid fragment destination", () => {
-    render(<App />);
+  it("gives each ButtonLink specimen a valid fragment destination", () => {
+    renderPath("/components/button-link");
 
-    const links = screen.getAllByRole("link", { name: "Button link" });
-    const fragmentIds = links.map((link) => link.getAttribute("href")?.slice(1));
-
-    expect(fragmentIds).toHaveLength(2);
-    expect(new Set(fragmentIds).size).toBe(2);
-    for (const fragmentId of fragmentIds) {
-      expect(fragmentId).toBeTruthy();
+    for (const name of [
+      "Primary",
+      "Secondary",
+      "Subtle",
+      "Destructive",
+      "Text",
+      "Text accent",
+      "More destinations",
+    ]) {
+      const link = screen.getByRole("link", { name });
+      const fragmentId = link.getAttribute("href")?.slice(1);
+      expect(fragmentId).toBe("button-link-destination");
       expect(document.getElementById(fragmentId as string)).not.toBeNull();
     }
+  });
+
+  it("shows TextInput error association and determinate progress semantics", () => {
+    let view = renderPath("/components/text-input");
+    const input = screen.getByRole("textbox", { name: "Error input" });
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    const error = document.getElementById(input.getAttribute("aria-describedby") ?? "");
+    expect(error).toHaveAttribute("role", "alert");
+    view.unmount();
+
+    view = renderPath("/components/progress-bar");
+    expect(screen.getByRole("progressbar", { name: "Upload progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "45",
+    );
+    view.unmount();
   });
 
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
@@ -150,11 +161,18 @@ describe("alpha component lab", () => {
     }
   });
 
-  it("uses visible lifecycle labels in both theme panels", () => {
-    render(<App />);
+  it("uses visible lifecycle labels for every documentation status", () => {
+    render(
+      <div>
+        <StatusTag status="stable" />
+        <StatusTag status="beta" />
+        <StatusTag status="unstable" />
+        <StatusTag status="deprecated" />
+      </div>,
+    );
 
     for (const label of ["Stable", "Beta", "Unstable", "Deprecated"]) {
-      expect(screen.getAllByText(label)).toHaveLength(2);
+      expect(screen.getByText(label)).toBeVisible();
     }
   });
 

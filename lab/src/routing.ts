@@ -12,10 +12,10 @@ export function labHref(path: string) {
 }
 
 export function useLabPath(validPaths: ReadonlySet<string>) {
-  const readPath = () => resolveLabPath(window.location.hash, validPaths);
-  const [path, setPath] = useState(readPath);
+  const [path, setPath] = useState(() => resolveLabPath(window.location.hash, validPaths));
 
   useEffect(() => {
+    const readPath = () => resolveLabPath(window.location.hash, validPaths);
     const updatePath = () => setPath(readPath());
     window.addEventListener("hashchange", updatePath);
 

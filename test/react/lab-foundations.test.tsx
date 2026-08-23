@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import postcss from "postcss";
 import { axe } from "vitest-axe";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../lab/src/app";
 
@@ -15,8 +15,11 @@ vi.mock("agentation", () => ({
 
 const labStyles = postcss.parse(readFileSync("lab/src/lab.css", "utf8"));
 
+afterEach(cleanup);
+
 describe("foundation lab", () => {
   it("pairs accent swatches with the on-accent foreground", async () => {
+    window.history.replaceState(null, "", "#/foundations");
     const { container } = render(<App />);
 
     for (const label of screen.getAllByText("Accent")) {
