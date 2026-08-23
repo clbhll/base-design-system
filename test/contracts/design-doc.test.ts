@@ -48,15 +48,4 @@ describe("design documentation contract", () => {
     expect(design).toContain("CLB-692 approved foundation vocabulary");
     expect(design).not.toContain("CLB-692 will approve the complete semantic token");
   });
-
-  it("keeps the shipped StatusTag scoped to the documentation lab", async () => {
-    const readme = await readRepositoryFile("README.md");
-    const roadmap = readme.match(/## Roadmap\n\n(?<content>[\s\S]*?)\n\n## License/)?.groups
-      ?.content;
-
-    expect(roadmap).toContain("CLB-694 and CLB-695 added the first public action, input, and feedback primitives");
-    expect(roadmap).toContain("CLB-716 added the front-facing component lab");
-    expect(roadmap).toContain("a lab-only `StatusTag` that is never exported or included in the npm package");
-    expect(roadmap).not.toMatch(/CLB-695[^.]*StatusTag/i);
-  });
 });

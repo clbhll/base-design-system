@@ -60,6 +60,8 @@ Start the local component lab with:
 pnpm lab:dev
 ```
 
+The lab is Base's public component reference. Its left navigation opens hash-linkable documents for foundations and every current public component, while live specimens consume only `@calebhill/base` exports and the public stylesheet. The lab remains package-owned documentation and is excluded from the npm artifact.
+
 Validate one packed npm artifact in the standalone Vite and Next.js consumer fixtures with:
 
 ```sh
