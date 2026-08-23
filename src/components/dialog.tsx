@@ -7,13 +7,20 @@ import {
   useRef,
   useState,
   type ComponentPropsWithoutRef,
+  type CSSProperties,
   type ForwardedRef,
   type HTMLAttributes,
   type ReactNode,
   type RefObject,
 } from "react";
-import { motion } from "motion/react";
+import { easingConfigs } from "@calebhill/animations";
+import { motion, useReducedMotion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
+
+const dialogEase = `cubic-bezier(${easingConfigs.general.ease!.join(", ")})`;
+const dialogLayoutDuration = 0.22;
+
+type DialogStyle = CSSProperties & { "--base-dialog-ease": string };
 
 export type DialogSize = "compact" | "wide";
 
@@ -74,11 +81,13 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
     overlayClassName,
     portalContainer,
     size = "compact",
+    style,
     ...surfaceProps
   },
   ref,
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
   const [isPresent, setIsPresent] = useState(open);
   const exitCompletedRef = useRef(false);
   const previousOpenRef = useRef(open);
@@ -91,6 +100,14 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
     [ref],
   );
   const shouldRender = open || isPresent;
+  const shouldLayout = _layoutDependency !== undefined && !reduceMotion;
+  const animationStyle: DialogStyle = {
+    "--base-dialog-ease": dialogEase,
+  };
+  const dialogStyle: DialogStyle = {
+    ...style,
+    ...animationStyle,
+  };
 
   useEffect(() => {
     if (open) {
@@ -135,6 +152,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
               .filter(Boolean)
               .join(" ")}
             forceMount
+            style={animationStyle}
           />
           <DialogPrimitive.Content
             {...surfaceProps}
@@ -148,6 +166,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
               .filter(Boolean)
               .join(" ")}
             forceMount
+            style={dialogStyle}
             onOpenAutoFocus={(event) => {
               const activeElement = document.activeElement;
               restoreFocusRef.current =
@@ -176,7 +195,23 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
               if (!_dismissOnBackdrop) event.preventDefault();
             }}
           >
-            <motion.div className="base-dialog-layout">{children}</motion.div>
+            <motion.div
+              className="base-dialog-layout"
+              layout={shouldLayout ? "size" : false}
+              layoutDependency={_layoutDependency}
+              transition={
+                shouldLayout
+                  ? {
+                      layout: {
+                        duration: dialogLayoutDuration,
+                        ease: easingConfigs.general.ease,
+                      },
+                    }
+                  : undefined
+              }
+            >
+              {children}
+            </motion.div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       ) : null}

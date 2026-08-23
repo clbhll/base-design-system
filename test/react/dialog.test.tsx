@@ -35,6 +35,7 @@ describe("Dialog anatomy", () => {
         open
         portalContainer={portal}
         ref={ref}
+        style={{ paddingInline: "2rem" }}
       >
         <DialogHeading title="Edit photo" subtitle="Update the caption." />
         <DialogFooter>
@@ -44,9 +45,17 @@ describe("Dialog anatomy", () => {
     );
 
     const dialog = within(portal).getByRole("dialog", { name: "Edit photo" });
+    const overlay = portal.querySelector<HTMLElement>(".base-dialog-overlay")!;
     expect(ref.current).toBe(dialog);
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute("data-track", "edit");
+    expect(dialog.style.paddingInline).toBe("2rem");
+    expect(dialog.style.getPropertyValue("--base-dialog-ease")).toBe(
+      "cubic-bezier(0.22, 1, 0.36, 1)",
+    );
+    expect(overlay.style.getPropertyValue("--base-dialog-ease")).toBe(
+      "cubic-bezier(0.22, 1, 0.36, 1)",
+    );
     expect(dialog).toHaveClass(
       "base-dialog",
       "base-dialog-compact",
