@@ -82,19 +82,22 @@ describe("Dialog anatomy", () => {
 
 describe("Dialog accessibility", () => {
   it.each(["light", "dark"] as const)("is axe-clean in the %s theme", async (theme) => {
+    const portal = document.createElement("div");
+    portal.dataset.baseTheme = theme;
+    portal.dataset.testPortal = "true";
+    document.body.append(portal);
+
     render(
-      <section data-base-theme={theme}>
-        <Dialog onOpenChange={() => undefined} open>
-          <DialogHeading title="Edit photo" subtitle="Update the caption." />
-          <label htmlFor={`${theme}-caption`}>Caption</label>
-          <input id={`${theme}-caption`} />
-          <a href="#details">View details</a>
-          <DialogFooter>
-            <Button variant="secondary">Cancel</Button>
-            <Button>Save</Button>
-          </DialogFooter>
-        </Dialog>
-      </section>,
+      <Dialog onOpenChange={() => undefined} open portalContainer={portal}>
+        <DialogHeading title="Edit photo" subtitle="Update the caption." />
+        <label htmlFor={`${theme}-caption`}>Caption</label>
+        <input id={`${theme}-caption`} />
+        <a href="#details">View details</a>
+        <DialogFooter>
+          <Button variant="secondary">Cancel</Button>
+          <Button>Save</Button>
+        </DialogFooter>
+      </Dialog>,
     );
 
     expect(
@@ -164,6 +167,41 @@ describe("Dialog focus", () => {
     await user.click(showControl);
     await user.tab();
     expect(screen.getByRole("button", { name: "Dynamic action" })).toHaveFocus();
+  });
+
+  it("returns focus immediately and makes a retained closing surface inert", async () => {
+    mockDialogAnimations();
+    const user = userEvent.setup();
+    render(<FocusHarness />);
+
+    const opener = screen.getByRole("button", { name: "Open focus dialog" });
+    await user.click(opener);
+    await user.click(screen.getByRole("button", { name: "Close focus dialog" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Focus behavior", hidden: true });
+    expect(dialog).toHaveAttribute("inert");
+    expect(opener).toHaveFocus();
+  });
+
+  it("re-enters focus when reopened before the retained exit completes", async () => {
+    mockDialogAnimations();
+    const user = userEvent.setup();
+    render(<FocusHarness />);
+
+    const opener = screen.getByRole("button", { name: "Open focus dialog" });
+    await user.click(opener);
+    await user.click(screen.getByRole("button", { name: "Close focus dialog" }));
+    await user.click(opener);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Show another action" })).toHaveFocus(),
+    );
+    expect(screen.getByRole("dialog", { name: "Focus behavior" })).not.toHaveAttribute(
+      "inert",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Close focus dialog" }));
+    expect(opener).toHaveFocus();
   });
 });
 
@@ -258,36 +296,51 @@ describe("Dialog lifecycle", () => {
     expect(document.body.style.overflow).toBe("clip");
   });
 
-  it("completes exit only when the closing dialog surface finishes animating", async () => {
-    const readComputedStyle = window.getComputedStyle.bind(window);
-    vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudoElement) => {
-      const style = readComputedStyle(element, pseudoElement);
-      if (!(element instanceof HTMLElement) || !element.classList.contains("base-dialog")) {
-        return style;
-      }
+  it.each(["animationend", "animationcancel"])(
+    "completes exit only when the closing dialog surface emits %s",
+    async (animationEvent) => {
+      mockDialogAnimations();
 
-      return new Proxy(style, {
-        get(target, property) {
-          if (property === "animationName") {
-            return element.dataset.state === "closed"
-              ? "base-dialog-surface-exit"
-              : "base-dialog-surface-enter";
-          }
-          const value: unknown = Reflect.get(target, property, target);
-          return value;
-        },
-      });
-    });
-
-    function ExitHarness() {
-      const [open, setOpen] = useState(true);
-      return (
-        <>
+      function ExitHarness() {
+        const [open, setOpen] = useState(true);
+        return (
           <Dialog onExitComplete={onExitComplete} onOpenChange={setOpen} open={open}>
             <DialogHeading title="Exit behavior" />
             <Button onClick={() => setOpen(false)}>Close exit dialog</Button>
           </Dialog>
-        </>
+        );
+      }
+
+      const user = userEvent.setup();
+      const onExitComplete = vi.fn();
+      render(<ExitHarness />);
+
+      await user.click(screen.getByRole("button", { name: "Close exit dialog" }));
+      const dialog = screen.getByRole("dialog", { name: "Exit behavior", hidden: true });
+      expect(dialog).toHaveAttribute("data-state", "closed");
+
+      fireEvent(
+        within(dialog).getByRole("heading", { hidden: true }),
+        new Event(animationEvent, { bubbles: true }),
+      );
+      expect(onExitComplete).not.toHaveBeenCalled();
+
+      fireEvent(dialog, new Event(animationEvent, { bubbles: true }));
+      expect(onExitComplete).toHaveBeenCalledOnce();
+
+      fireEvent(dialog, new Event(animationEvent, { bubbles: true }));
+      expect(onExitComplete).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("completes exit when no closing animation retains the surface", async () => {
+    function ExitHarness() {
+      const [open, setOpen] = useState(true);
+      return (
+        <Dialog onExitComplete={onExitComplete} onOpenChange={setOpen} open={open}>
+          <DialogHeading title="Exit without animation" />
+          <Button onClick={() => setOpen(false)}>Close without animation</Button>
+        </Dialog>
       );
     }
 
@@ -295,14 +348,33 @@ describe("Dialog lifecycle", () => {
     const onExitComplete = vi.fn();
     render(<ExitHarness />);
 
-    await user.click(screen.getByRole("button", { name: "Close exit dialog" }));
-    const dialog = screen.getByRole("dialog", { name: "Exit behavior", hidden: true });
-    expect(dialog).toHaveAttribute("data-state", "closed");
+    await user.click(screen.getByRole("button", { name: "Close without animation" }));
 
-    fireEvent.animationEnd(within(dialog).getByRole("heading", { hidden: true }));
-    expect(onExitComplete).not.toHaveBeenCalled();
-
-    fireEvent.animationEnd(dialog);
-    expect(onExitComplete).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onExitComplete).toHaveBeenCalledOnce());
+    expect(
+      screen.queryByRole("dialog", { name: "Exit without animation", hidden: true }),
+    ).not.toBeInTheDocument();
   });
 });
+
+function mockDialogAnimations() {
+  const readComputedStyle = window.getComputedStyle.bind(window);
+  vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudoElement) => {
+    const style = readComputedStyle(element, pseudoElement);
+    if (!(element instanceof HTMLElement) || !element.classList.contains("base-dialog")) {
+      return style;
+    }
+
+    return new Proxy(style, {
+      get(target, property) {
+        if (property === "animationName") {
+          return element.dataset.state === "closed"
+            ? "base-dialog-surface-exit"
+            : "base-dialog-surface-enter";
+        }
+        const value: unknown = Reflect.get(target, property, target);
+        return value;
+      },
+    });
+  });
+}

@@ -268,6 +268,12 @@ function assertRuntimeDependencies(packageJson) {
   assertSame(actualDependencies, expectedRuntimeDependencies, "Packed runtime dependencies");
 }
 
+function assertClientBoundary(source) {
+  if (!source.trimStart().startsWith('"use client";')) {
+    throw new Error('Packed runtime client boundary mismatch. Expected dist/index.js to begin with "use client";');
+  }
+}
+
 function assertCssContract(tokens, styles) {
   const allowedTokenSelectors = new Set([
     ":root",
@@ -352,6 +358,7 @@ export async function assertPackedPackage(packageRoot) {
     "dist/styles.css": styles,
   });
   assertRuntimeDependencies(packageJson);
+  assertClientBoundary(source);
   const runtimeModule = await import(pathToFileURL(join(packageRoot, "dist/index.js")).href);
   assertSame(Object.keys(runtimeModule).sort(), expectedRuntimeExports, "Packed runtime exports");
   assertDeclarationSurface(declarations);

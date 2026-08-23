@@ -97,6 +97,8 @@ export type DialogProps = Omit<
   ComponentPropsWithoutRef<"div">,
   | "aria-modal"
   | "children"
+  | "defaultOpen"
+  | "inert"
   | "onAnimationEnd"
   | "onAnimationEndCapture"
   | "role"
@@ -205,11 +207,13 @@ Pointer interaction outside the surface calls it only when
 backdrop dismissal. These controls are independent.
 
 When `open` becomes false, the surface and overlay remain present for their CSS
-exit animations. They are no longer interactive during the closed state.
-Focus returns to the connected element that held focus before opening. Body
-scroll and background interactivity are restored without overwriting consumer
-styles. `onExitComplete` fires once from the surface's closed-state animation
-completion, after which the primitive unmounts the portal content.
+exit animations. Base marks the surface inert and immediately returns focus to
+the connected element that held focus before opening. Body scroll and background
+interactivity are restored without overwriting consumer styles. `onExitComplete`
+fires once when the closed-state surface animation ends or is canceled, or
+immediately when no animation retains the surface. Child animation events do not
+trigger it. If the controlled state reopens before exit presence unmounts, focus
+re-enters at the prior entry target and the next close still restores the opener.
 
 ## Motion
 

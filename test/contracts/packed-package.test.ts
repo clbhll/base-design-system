@@ -70,6 +70,7 @@ function writeExtractedPackage(root: string) {
   writeFileSync(
     join(root, "dist/index.js"),
     [
+      '"use client";',
       'export const BASE_THEME_ATTRIBUTE = "data-base-theme";',
       "export const Button = null;",
       "export const ButtonLink = null;",
@@ -190,6 +191,18 @@ function mutateExtractedTarball(mutator: (root: string) => void) {
 }
 
 describe("packed package contract", () => {
+  it("rejects a runtime bundle without the React client boundary", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        const runtimePath = join(root, "dist/index.js");
+        writeFileSync(
+          runtimePath,
+          readFileSync(runtimePath, "utf8").replace('"use client";\n', ""),
+        );
+      }),
+    ).toThrow(/client boundary/i);
+  });
+
   it("rejects a runtime export outside the approved alpha surface", () => {
     expect(() =>
       mutatePackage((root) => {

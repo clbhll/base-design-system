@@ -265,7 +265,7 @@ function ComponentPanel({ theme }: { theme: BaseTheme }) {
           <li>Tab to each control; Enter and Space activate native buttons.</li>
           <li>Icon-only controls require an accessible name.</li>
           <li>Error text is announced through the input’s error association.</li>
-          <li>Reduced motion removes component transitions while state remains visible.</li>
+          <li>Reduced motion removes spatial movement while brief opacity feedback remains.</li>
         </ul>
       </div>
     </section>

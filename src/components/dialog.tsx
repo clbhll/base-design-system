@@ -28,6 +28,7 @@ export type DialogProps = Omit<
   | "aria-modal"
   | "children"
   | "defaultOpen"
+  | "inert"
   | "onAnimationEnd"
   | "onAnimationEndCapture"
   | "role"
@@ -89,6 +90,9 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
   const contentRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const exitCompletedRef = useRef(false);
+  const hasOpenedRef = useRef(false);
+  const entryFocusRef = useRef<HTMLElement>(null);
+  const previousOpenRef = useRef(open);
   const restoreFocusRef = useRef<HTMLElement>(null);
   const setContentRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -113,15 +117,72 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
   }, [_onExitComplete, open]);
 
   useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
+    if (open) {
+      hasOpenedRef.current = true;
+      return;
+    }
+    if (!hasOpenedRef.current) return;
 
-    const handleAnimationEnd = (event: AnimationEvent) => {
+    let content: HTMLDivElement | null = null;
+    let disposed = false;
+
+    const handleAnimationComplete = (event: AnimationEvent) => {
       if (event.target === content) completeExit();
     };
-    content.addEventListener("animationend", handleAnimationEnd);
-    return () => content.removeEventListener("animationend", handleAnimationEnd);
-  }, [completeExit]);
+
+    queueMicrotask(() => {
+      if (disposed) return;
+      content = contentRef.current;
+      if (!content?.isConnected) {
+        completeExit();
+        return;
+      }
+      content.addEventListener("animationend", handleAnimationComplete);
+      content.addEventListener("animationcancel", handleAnimationComplete);
+    });
+
+    return () => {
+      disposed = true;
+      content?.removeEventListener("animationend", handleAnimationComplete);
+      content?.removeEventListener("animationcancel", handleAnimationComplete);
+    };
+  }, [completeExit, open]);
+
+  useEffect(() => {
+    if (open) return;
+
+    const target = restoreFocusRef.current;
+    restoreFocusRef.current = null;
+    if (target?.isConnected) target.focus({ preventScroll: true });
+  }, [open]);
+
+  useEffect(() => {
+    const wasOpen = previousOpenRef.current;
+    previousOpenRef.current = open;
+    if (!open || wasOpen) return;
+
+    queueMicrotask(() => {
+      const content = contentRef.current;
+      const activeElement = document.activeElement;
+      if (!content?.isConnected || content.contains(activeElement)) return;
+
+      restoreFocusRef.current =
+        activeElement instanceof HTMLElement && activeElement !== document.body
+          ? activeElement
+          : null;
+      const initialTarget =
+        _initialFocusRef?.current?.isConnected &&
+        content.contains(_initialFocusRef.current)
+          ? _initialFocusRef.current
+          : null;
+      const previousTarget =
+        entryFocusRef.current?.isConnected && content.contains(entryFocusRef.current)
+          ? entryFocusRef.current
+          : null;
+      const target = initialTarget ?? previousTarget ?? content;
+      target.focus({ preventScroll: true });
+    });
+  }, [_initialFocusRef, open]);
 
   return (
     <DialogPrimitive.Root onOpenChange={onOpenChange} open={open}>
@@ -136,6 +197,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
           {...surfaceProps}
           ref={setContentRef}
           aria-modal="true"
+          inert={open ? undefined : true}
           className={[
             "base-dialog",
             `base-dialog-${size}`,
@@ -151,6 +213,16 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
               activeElement instanceof HTMLElement && activeElement !== document.body
                 ? activeElement
                 : null;
+
+            queueMicrotask(() => {
+              const entryFocus = document.activeElement;
+              if (
+                entryFocus instanceof HTMLElement &&
+                contentRef.current?.contains(entryFocus)
+              ) {
+                entryFocusRef.current = entryFocus;
+              }
+            });
 
             const target = _initialFocusRef?.current;
             if (!target?.isConnected || !contentRef.current?.contains(target)) return;

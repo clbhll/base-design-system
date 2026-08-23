@@ -81,6 +81,13 @@ const customAnimationEndCapture = (
   </Dialog>
 );
 
+const customInert = (
+  // @ts-expect-error inert state is owned by Dialog
+  <Dialog inert open onOpenChange={() => undefined}>
+    <DialogHeading title="Title" />
+  </Dialog>
+);
+
 describe("Dialog type contract", () => {
   it("accepts the controlled compound API and rejects package-owned props", () => {
     expect([
@@ -91,6 +98,7 @@ describe("Dialog type contract", () => {
       customModal,
       customAnimationEnd,
       customAnimationEndCapture,
-    ]).toHaveLength(7);
+      customInert,
+    ]).toHaveLength(8);
   });
 });
