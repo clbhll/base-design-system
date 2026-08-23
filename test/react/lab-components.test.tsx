@@ -50,8 +50,8 @@ function contrastRatio(foreground: string, surface: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function themeStatusValues(selector: string) {
-  const values = declarationsFor(selector);
+function statusValues() {
+  const values = declarationsFor(".lab-app-shell");
   return {
     beta: [values.get("--lab-status-beta-text"), values.get("--lab-status-beta-surface")],
     unstable: [
@@ -102,9 +102,7 @@ describe("alpha component lab", () => {
       "More destinations",
     ]) {
       const link = screen.getByRole("link", { name });
-      const fragmentId = link.getAttribute("href")?.slice(1);
-      expect(fragmentId).toBe("button-link-destination");
-      expect(document.getElementById(fragmentId as string)).not.toBeNull();
+      expect(link).toHaveAttribute("href", "#/components/button-link");
     }
   });
 
@@ -176,7 +174,7 @@ describe("alpha component lab", () => {
     }
   });
 
-  it("keeps lifecycle status styling local, themed, and readable", () => {
+  it("keeps lifecycle status styling local and readable", () => {
     const statusRule = declarationsFor(".lab-status-tag");
     expect(statusRule.size).toBeGreaterThan(0);
 
@@ -198,16 +196,10 @@ describe("alpha component lab", () => {
       "--base-color-danger",
     );
 
-    for (const selector of [
-      '.lab-panel[data-base-theme="light"]',
-      '.lab-panel[data-base-theme="dark"]',
-    ]) {
-      const statuses = themeStatusValues(selector);
-      for (const [foreground, surface] of Object.values(statuses)) {
-        expect(foreground).toMatch(/^#[0-9a-f]{6}$/i);
-        expect(surface).toMatch(/^#[0-9a-f]{6}$/i);
-        expect(contrastRatio(foreground as string, surface as string)).toBeGreaterThanOrEqual(4.5);
-      }
+    for (const [foreground, surface] of Object.values(statusValues())) {
+      expect(foreground).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(surface).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(contrastRatio(foreground as string, surface as string)).toBeGreaterThanOrEqual(4.5);
     }
 
     const labVariables: string[] = [];

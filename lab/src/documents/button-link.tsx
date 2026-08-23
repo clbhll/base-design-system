@@ -22,21 +22,21 @@ export function ButtonLinkDocument() {
   return (
     <article className="lab-component-document">
       <DocumentHeader
-        importStatement={'import { ButtonLink } from "@calebhill/base";'}
+        importStatement={'import { ButtonLink, MoreIcon } from "@calebhill/base";'}
         status="beta"
         summary="A native anchor with Button's visual variants and no disabled-anchor contract."
         title="Button Link"
       />
       <Specimen onThemeChange={setTheme} theme={theme} title="Variants and sizes">
-        <div className="lab-component-grid" id="button-link-destination">
+        <div className="lab-component-grid">
           {buttonLinkVariants.map(([variant, label]) => (
-            <ButtonLink href="#button-link-destination" key={variant} variant={variant}>
+            <ButtonLink href="#/components/button-link" key={variant} variant={variant}>
               {label}
             </ButtonLink>
           ))}
           <ButtonLink
             aria-label="More destinations"
-            href="#button-link-destination"
+            href="#/components/button-link"
             size="icon"
             variant="subtle"
           >

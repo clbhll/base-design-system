@@ -85,6 +85,17 @@ describe("lab document navigation", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Foundations" })).toBeVisible();
   });
 
+  it("moves focus to the document without replacing the component route", async () => {
+    window.history.replaceState(null, "", "#/components/button");
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("link", { name: "Skip to document" }));
+
+    expect(window.location.hash).toBe("#/components/button");
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
   it("normalizes an unknown location to Foundations", async () => {
     window.history.replaceState(null, "", "#/components/unknown");
     render(<App />);

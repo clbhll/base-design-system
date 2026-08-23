@@ -27,7 +27,7 @@ export function TextInputDocument() {
         </div>
       </Specimen>
       <CodeSample
-        code={'<TextInput aria-label="Email" error="Enter a valid email address." />'}
+        code={'<TextInput aria-label="Error input" error="This field needs attention." />'}
       />
       <PropsTable
         props={[

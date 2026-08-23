@@ -35,8 +35,16 @@ function renderPath(path: string) {
 }
 
 const componentDocuments = [
-  ["/components/button", "Button", 'import { Button } from "@calebhill/base";'],
-  ["/components/button-link", "Button Link", 'import { ButtonLink } from "@calebhill/base";'],
+  [
+    "/components/button",
+    "Button",
+    'import { Button, MoreIcon, TrashIcon } from "@calebhill/base";',
+  ],
+  [
+    "/components/button-link",
+    "Button Link",
+    'import { ButtonLink, MoreIcon } from "@calebhill/base";',
+  ],
   ["/components/text-input", "Text Input", 'import { TextInput } from "@calebhill/base";'],
   ["/components/progress-bar", "Progress Bar", 'import { ProgressBar } from "@calebhill/base";'],
   ["/components/icons", "Icons", 'import { MoreIcon, TrashIcon } from "@calebhill/base";'],

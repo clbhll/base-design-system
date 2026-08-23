@@ -28,7 +28,7 @@ export function ButtonDocument() {
   return (
     <article className="lab-component-document">
       <DocumentHeader
-        importStatement={'import { Button } from "@calebhill/base";'}
+        importStatement={'import { Button, MoreIcon, TrashIcon } from "@calebhill/base";'}
         status="beta"
         summary="A native button with semantic variants, two sizes, and Base-owned interaction states."
         title="Button"

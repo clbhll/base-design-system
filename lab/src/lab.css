@@ -348,20 +348,6 @@ body {
   border-radius: var(--base-ref-radius-lg);
 }
 
-.lab-panel[data-base-theme="light"] {
-  --lab-status-beta-surface: #eee9ff;
-  --lab-status-beta-text: #4c1d95;
-  --lab-status-warning-surface: #fff4cc;
-  --lab-status-warning-text: #6b4600;
-}
-
-.lab-panel[data-base-theme="dark"] {
-  --lab-status-beta-surface: #2e2259;
-  --lab-status-beta-text: #d9ccff;
-  --lab-status-warning-surface: #4a3712;
-  --lab-status-warning-text: #ffe0a3;
-}
-
 .lab-section {
   display: grid;
   gap: var(--base-ref-space-3);

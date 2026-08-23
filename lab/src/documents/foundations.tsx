@@ -71,10 +71,10 @@ function FoundationPanel({ theme }: { theme: BaseTheme }) {
           >
             <span className="base-type-caption">{label}</span>
             <span className="base-type-body">
-              <a className="base-link" href={`#${theme}-${token}-standard`}>
+              <a className="base-link" href="#/foundations">
                 Standard link
               </a>{" "}
-              <a className="base-link-muted" href={`#${theme}-${token}-muted`}>
+              <a className="base-link-muted" href="#/foundations">
                 Muted link
               </a>
             </span>
@@ -116,7 +116,7 @@ export function FoundationsDocument() {
         }
       >
         <p className="base-type-body">
-          Scoped override: <a className="base-link" href="#override">consumer accent</a>
+          Scoped override: <a className="base-link" href="#/foundations">consumer accent</a>
         </p>
         <button className="lab-pressable base-focus-ring base-pressable base-type-action" type="button">
           Consumer accent

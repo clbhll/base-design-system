@@ -21,7 +21,14 @@ export function App() {
 
   return (
     <>
-      <a className="lab-skip-link base-focus-ring" href="#lab-document">
+      <a
+        className="lab-skip-link base-focus-ring"
+        href="#lab-document"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("lab-document")?.focus();
+        }}
+      >
         Skip to document
       </a>
       <div className="lab-app-shell">
@@ -59,7 +66,7 @@ export function App() {
             View source
           </a>
         </aside>
-        <main className="lab-document" id="lab-document">
+        <main className="lab-document" id="lab-document" tabIndex={-1}>
           <Document />
         </main>
       </div>
