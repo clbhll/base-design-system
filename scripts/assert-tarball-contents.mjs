@@ -19,6 +19,9 @@ export const expectedRuntimeExports = [
   "BASE_THEME_ATTRIBUTE",
   "Button",
   "ButtonLink",
+  "Dialog",
+  "DialogFooter",
+  "DialogHeading",
   "MoreIcon",
   "ProgressBar",
   "TextInput",
@@ -35,6 +38,13 @@ export const expectedDeclarationNames = [
   "ButtonLinkProps",
   "ButtonVariant",
   "ButtonSize",
+  "Dialog",
+  "DialogFooter",
+  "DialogFooterProps",
+  "DialogHeading",
+  "DialogHeadingProps",
+  "DialogProps",
+  "DialogSize",
   "MoreIcon",
   "ProgressBar",
   "TextInput",
@@ -50,7 +60,15 @@ export const expectedExports = {
   "./tokens.css": "./dist/tokens.css",
 };
 export const expectedSideEffects = ["./dist/styles.css", "./dist/tokens.css"].sort();
-export const expectedPeerDependencies = ["react@>=19.0.0", "react-dom@>=19.0.0"].sort();
+export const expectedPeerDependencies = [
+  "motion@^13.1.1",
+  "react@>=19.0.0",
+  "react-dom@>=19.0.0",
+].sort();
+export const expectedRuntimeDependencies = [
+  "@calebhill/animations@^0.6.0",
+  "radix-ui@^1.6.7",
+].sort();
 
 const forbiddenContent = [
   [/@\//, "application alias @/"],
@@ -84,6 +102,7 @@ const approvedTsupSourceLabels = new Set([
   "src/components/button.tsx",
   "src/components/text-input.tsx",
   "src/components/progress-bar.tsx",
+  "src/components/dialog.tsx",
   "src/components/icons/more-icon.tsx",
   "src/components/icons/trash-icon.tsx",
 ]);
@@ -230,7 +249,6 @@ function assertPackageMetadata(packageJson) {
 
 function assertRuntimeDependencies(packageJson) {
   const runtimeChannels = [
-    "dependencies",
     "optionalDependencies",
     "bundledDependencies",
     "bundleDependencies",
@@ -243,6 +261,11 @@ function assertRuntimeDependencies(packageJson) {
       `Packed runtime dependencies mismatch. Expected absent channels: ${runtimeChannels.join(", ")}\nActual: ${presentChannels.join(", ")}`,
     );
   }
+
+  const actualDependencies = Object.entries(packageJson.dependencies ?? {})
+    .map(([name, range]) => `${name}@${range}`)
+    .sort();
+  assertSame(actualDependencies, expectedRuntimeDependencies, "Packed runtime dependencies");
 }
 
 function assertCssContract(tokens, styles) {
@@ -301,6 +324,7 @@ function assertCssContract(tokens, styles) {
     ["button", ".base-button"],
     ["text-input", ".base-text-input"],
     ["progress-bar", ".base-progress-bar"],
+    ["dialog", ".base-dialog"],
   ].filter(([name, className]) =>
     !styles.includes(`base-component: ${name}`) || !styles.includes(className),
   );

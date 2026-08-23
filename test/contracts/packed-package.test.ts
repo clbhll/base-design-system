@@ -53,7 +53,15 @@ function writeExtractedPackage(root: string) {
           "./tokens.css": "./dist/tokens.css",
         },
         sideEffects: ["./dist/styles.css", "./dist/tokens.css"],
-        peerDependencies: { react: ">=19.0.0", "react-dom": ">=19.0.0" },
+        dependencies: {
+          "@calebhill/animations": "^0.6.0",
+          "radix-ui": "^1.6.7",
+        },
+        peerDependencies: {
+          motion: "^13.1.1",
+          react: ">=19.0.0",
+          "react-dom": ">=19.0.0",
+        },
       },
       null,
       2,
@@ -65,6 +73,9 @@ function writeExtractedPackage(root: string) {
       'export const BASE_THEME_ATTRIBUTE = "data-base-theme";',
       "export const Button = null;",
       "export const ButtonLink = null;",
+      "export const Dialog = null;",
+      "export const DialogFooter = null;",
+      "export const DialogHeading = null;",
       "export const MoreIcon = null;",
       "export const ProgressBar = null;",
       "export const TextInput = null;",
@@ -83,6 +94,13 @@ function writeExtractedPackage(root: string) {
       "export type ButtonLinkProps = {};",
       "export type ButtonVariant = 'primary';",
       "export type ButtonSize = 'default';",
+      "export declare const Dialog: unknown;",
+      "export declare const DialogFooter: unknown;",
+      "export type DialogFooterProps = {};",
+      "export declare const DialogHeading: unknown;",
+      "export type DialogHeadingProps = {};",
+      "export type DialogProps = {};",
+      "export type DialogSize = 'compact' | 'wide';",
       "export declare const MoreIcon: unknown;",
       "export declare const ProgressBar: unknown;",
       "export declare const TextInput: unknown;",
@@ -99,6 +117,7 @@ function writeExtractedPackage(root: string) {
       "/* base-component: button */ .base-button {}",
       "/* base-component: text-input */ .base-text-input {}",
       "/* base-component: progress-bar */ .base-progress-bar {}",
+      "/* base-component: dialog */ .base-dialog {}",
     ].join("\n"),
   );
 }
@@ -405,6 +424,26 @@ describe("packed package contract", () => {
         });
       }),
     ).toThrow(/peer dependencies/i);
+  });
+
+  it("rejects a missing Motion peer", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        updateExtractedPackageManifest(root, (packageJson) => {
+          delete packageJson.peerDependencies.motion;
+        });
+      }),
+    ).toThrow(/peer dependencies/i);
+  });
+
+  it("rejects a missing Radix runtime dependency", () => {
+    expect(() =>
+      mutatePackage((root) => {
+        updateExtractedPackageManifest(root, (packageJson) => {
+          delete packageJson.dependencies?.["radix-ui"];
+        });
+      }),
+    ).toThrow(/runtime dependencies/i);
   });
 
   it("rejects an arbitrary runtime dependency", () => {

@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import * as publicApi from "../../src/index";
 import { buttonRuntimeExports } from "./public-api/button-exports";
+import { dialogRuntimeExports } from "./public-api/dialog-exports";
 import { primitiveRuntimeExports } from "./public-api/primitive-exports";
 
 const foundationRuntimeExports = ["BASE_THEME_ATTRIBUTE", "isBaseTheme"] as const;
 const runtimeExports = [
   ...foundationRuntimeExports,
   ...buttonRuntimeExports,
+  ...dialogRuntimeExports,
   ...primitiveRuntimeExports,
 ].sort();
 
