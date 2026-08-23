@@ -98,6 +98,7 @@ export type DialogProps = Omit<
   | "aria-modal"
   | "children"
   | "onAnimationEnd"
+  | "onAnimationEndCapture"
   | "role"
   | "tabIndex"
 > & {

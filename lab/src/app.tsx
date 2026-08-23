@@ -12,7 +12,7 @@ import {
   type BaseTheme,
   type ButtonVariant,
 } from "@calebhill/base";
-import { useRef, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import "@calebhill/base/styles.css";
 
 import { DevTools } from "./dev-tools";
@@ -118,7 +118,7 @@ function DialogExhibit({ theme }: { theme: BaseTheme }) {
   const size = compact ? "compact" : "wide";
   const [open, setOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const portalRef = useRef<HTMLDivElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
 
   return (
     <section className="lab-component-section">
@@ -134,7 +134,7 @@ function DialogExhibit({ theme }: { theme: BaseTheme }) {
       <code className="lab-code-sample base-type-mono">
         {`<Dialog open={open} onOpenChange={setOpen} size="${size}">`}
       </code>
-      <div className="lab-dialog-portal" ref={portalRef} />
+      <div className="lab-dialog-portal" ref={setPortalContainer} />
 
       <Dialog
         className="lab-dialog-content"
@@ -142,7 +142,7 @@ function DialogExhibit({ theme }: { theme: BaseTheme }) {
         layoutDependency={compact ? undefined : showDetails ? "expanded" : "collapsed"}
         onOpenChange={setOpen}
         open={open}
-        portalContainer={portalRef.current}
+        portalContainer={portalContainer}
         size={size}
       >
         <DialogHeading

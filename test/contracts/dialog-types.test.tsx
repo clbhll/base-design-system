@@ -15,7 +15,7 @@ const portal = document.createElement("div");
 const size = "wide" satisfies DialogSize;
 const props = {
   open: true,
-  onOpenChange: (_open: boolean) => undefined,
+  onOpenChange: () => undefined,
   size,
   dismissOnBackdrop: false,
   dismissOnEscape: false,
@@ -67,8 +67,30 @@ const customModal = (
   </Dialog>
 );
 
+const customAnimationEnd = (
+  // @ts-expect-error exit animation completion is owned by Dialog
+  <Dialog onAnimationEnd={() => undefined} open onOpenChange={() => undefined}>
+    <DialogHeading title="Title" />
+  </Dialog>
+);
+
+const customAnimationEndCapture = (
+  // @ts-expect-error exit animation completion is owned by Dialog
+  <Dialog onAnimationEndCapture={() => undefined} open onOpenChange={() => undefined}>
+    <DialogHeading title="Title" />
+  </Dialog>
+);
+
 describe("Dialog type contract", () => {
   it("accepts the controlled compound API and rejects package-owned props", () => {
-    expect([valid, missingOpen, uncontrolled, customRole, customModal]).toHaveLength(5);
+    expect([
+      valid,
+      missingOpen,
+      uncontrolled,
+      customRole,
+      customModal,
+      customAnimationEnd,
+      customAnimationEndCapture,
+    ]).toHaveLength(7);
   });
 });

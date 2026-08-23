@@ -15,6 +15,7 @@ import { Button, Dialog, DialogFooter, DialogHeading } from "../../src";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   document.querySelectorAll("[data-test-portal]").forEach((portal) => portal.remove());
   document.body.removeAttribute("style");
   document.body.removeAttribute("data-scroll-locked");
@@ -258,22 +259,30 @@ describe("Dialog lifecycle", () => {
   });
 
   it("completes exit only when the closing dialog surface finishes animating", async () => {
+    const readComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudoElement) => {
+      const style = readComputedStyle(element, pseudoElement);
+      if (!(element instanceof HTMLElement) || !element.classList.contains("base-dialog")) {
+        return style;
+      }
+
+      return new Proxy(style, {
+        get(target, property) {
+          if (property === "animationName") {
+            return element.dataset.state === "closed"
+              ? "base-dialog-surface-exit"
+              : "base-dialog-surface-enter";
+          }
+          const value: unknown = Reflect.get(target, property, target);
+          return value;
+        },
+      });
+    });
+
     function ExitHarness() {
       const [open, setOpen] = useState(true);
       return (
         <>
-          <style>{`
-            @keyframes base-dialog-test-enter { from { opacity: 0; } }
-            @keyframes base-dialog-test-exit { to { opacity: 0; } }
-            .base-dialog[data-state="open"] {
-              animation-name: base-dialog-test-enter;
-              animation-duration: 1ms;
-            }
-            .base-dialog[data-state="closed"] {
-              animation-name: base-dialog-test-exit;
-              animation-duration: 1ms;
-            }
-          `}</style>
           <Dialog onExitComplete={onExitComplete} onOpenChange={setOpen} open={open}>
             <DialogHeading title="Exit behavior" />
             <Button onClick={() => setOpen(false)}>Close exit dialog</Button>

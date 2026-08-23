@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
   type ComponentPropsWithoutRef,
   type CSSProperties,
   type ForwardedRef,
@@ -30,6 +29,7 @@ export type DialogProps = Omit<
   | "children"
   | "defaultOpen"
   | "onAnimationEnd"
+  | "onAnimationEndCapture"
   | "role"
   | "tabIndex"
 > & {
@@ -88,9 +88,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
-  const [isPresent, setIsPresent] = useState(open);
   const exitCompletedRef = useRef(false);
-  const previousOpenRef = useRef(open);
   const restoreFocusRef = useRef<HTMLElement>(null);
   const setContentRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -99,7 +97,6 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
     },
     [ref],
   );
-  const shouldRender = open || isPresent;
   const shouldLayout = _layoutDependency !== undefined && !reduceMotion;
   const animationStyle: DialogStyle = {
     "--base-dialog-ease": dialogEase,
@@ -109,26 +106,9 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
     ...animationStyle,
   };
 
-  useEffect(() => {
-    if (open) {
-      exitCompletedRef.current = false;
-      setIsPresent(true);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (previousOpenRef.current && !open) {
-      const target = restoreFocusRef.current;
-      restoreFocusRef.current = null;
-      if (target?.isConnected) target.focus({ preventScroll: true });
-    }
-    previousOpenRef.current = open;
-  }, [open]);
-
   const completeExit = useCallback(() => {
     if (open || exitCompletedRef.current) return;
     exitCompletedRef.current = true;
-    setIsPresent(false);
     _onExitComplete?.();
   }, [_onExitComplete, open]);
 
@@ -141,80 +121,77 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
     };
     content.addEventListener("animationend", handleAnimationEnd);
     return () => content.removeEventListener("animationend", handleAnimationEnd);
-  }, [completeExit, shouldRender]);
+  }, [completeExit]);
 
   return (
-    <DialogPrimitive.Root modal={open} onOpenChange={onOpenChange} open={open}>
-      {shouldRender ? (
-        <DialogPrimitive.Portal container={portalContainer ?? undefined} forceMount>
-          <DialogPrimitive.Overlay
-            className={["base-dialog-overlay", overlayClassName]
-              .filter(Boolean)
-              .join(" ")}
-            forceMount
-            style={animationStyle}
-          />
-          <DialogPrimitive.Content
-            {...surfaceProps}
-            ref={setContentRef}
-            aria-modal="true"
-            className={[
-              "base-dialog",
-              `base-dialog-${size}`,
-              className,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            forceMount
-            style={dialogStyle}
-            onOpenAutoFocus={(event) => {
-              const activeElement = document.activeElement;
-              restoreFocusRef.current =
-                activeElement instanceof HTMLElement && activeElement !== document.body
-                  ? activeElement
-                  : null;
+    <DialogPrimitive.Root onOpenChange={onOpenChange} open={open}>
+      <DialogPrimitive.Portal container={portalContainer ?? undefined}>
+        <DialogPrimitive.Overlay
+          className={["base-dialog-overlay", overlayClassName]
+            .filter(Boolean)
+            .join(" ")}
+          style={animationStyle}
+        />
+        <DialogPrimitive.Content
+          {...surfaceProps}
+          ref={setContentRef}
+          aria-modal="true"
+          className={[
+            "base-dialog",
+            `base-dialog-${size}`,
+            className,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          style={dialogStyle}
+          onOpenAutoFocus={(event) => {
+            exitCompletedRef.current = false;
+            const activeElement = document.activeElement;
+            restoreFocusRef.current =
+              activeElement instanceof HTMLElement && activeElement !== document.body
+                ? activeElement
+                : null;
 
-              const target = _initialFocusRef?.current;
-              if (!target?.isConnected || !contentRef.current?.contains(target)) return;
+            const target = _initialFocusRef?.current;
+            if (!target?.isConnected || !contentRef.current?.contains(target)) return;
 
-              event.preventDefault();
-              target.focus({ preventScroll: true });
-            }}
-            onCloseAutoFocus={(event) => {
-              const target = restoreFocusRef.current;
-              restoreFocusRef.current = null;
-              if (!target?.isConnected) return;
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+          }}
+          onCloseAutoFocus={(event) => {
+            const target = restoreFocusRef.current;
+            restoreFocusRef.current = null;
+            if (!target?.isConnected) return;
 
-              event.preventDefault();
-              target.focus({ preventScroll: true });
-            }}
-            onEscapeKeyDown={(event) => {
-              if (!_dismissOnEscape) event.preventDefault();
-            }}
-            onPointerDownOutside={(event) => {
-              if (!_dismissOnBackdrop) event.preventDefault();
-            }}
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+          }}
+          onEscapeKeyDown={(event) => {
+            if (!_dismissOnEscape) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (!_dismissOnBackdrop) event.preventDefault();
+          }}
+        >
+          <motion.div
+            className="base-dialog-layout"
+            layout={shouldLayout ? "size" : false}
+            layoutDependency={_layoutDependency}
+            transition={
+              shouldLayout
+                ? {
+                    layout: {
+                      duration: dialogLayoutDuration,
+                      ease: easingConfigs.general.ease,
+                    },
+                  }
+                : undefined
+            }
           >
-            <motion.div
-              className="base-dialog-layout"
-              layout={shouldLayout ? "size" : false}
-              layoutDependency={_layoutDependency}
-              transition={
-                shouldLayout
-                  ? {
-                      layout: {
-                        duration: dialogLayoutDuration,
-                        ease: easingConfigs.general.ease,
-                      },
-                    }
-                  : undefined
-              }
-            >
-              {children}
-            </motion.div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      ) : null}
+            {children}
+          </motion.div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );
 });

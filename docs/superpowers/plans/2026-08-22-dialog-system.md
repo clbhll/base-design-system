@@ -154,7 +154,7 @@ Create `src/components/dialog.tsx` with the final public type aliases but placeh
 import { forwardRef, type ComponentPropsWithoutRef, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 
 export type DialogSize = "compact" | "wide";
-export type DialogProps = Omit<ComponentPropsWithoutRef<"div">, "aria-modal" | "children" | "defaultOpen" | "onAnimationEnd" | "role" | "tabIndex"> & {
+export type DialogProps = Omit<ComponentPropsWithoutRef<"div">, "aria-modal" | "children" | "defaultOpen" | "onAnimationEnd" | "onAnimationEndCapture" | "role" | "tabIndex"> & {
   children: ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;

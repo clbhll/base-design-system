@@ -31,7 +31,7 @@ const buttonSize = "default" satisfies ButtonSize;
 const buttonVariant = "primary" satisfies ButtonVariant;
 const dialogSize = "wide" satisfies DialogSize;
 const dialogProps = {
-  onOpenChange: (_open: boolean) => undefined,
+  onOpenChange: () => undefined,
   open: false,
   size: dialogSize,
 } satisfies Omit<DialogProps, "children">;
