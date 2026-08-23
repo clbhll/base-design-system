@@ -1,6 +1,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import postcss, { type Rule } from "postcss";
 import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +12,22 @@ vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
 vi.mock("agentation", () => ({ Agentation: () => null }));
 
 afterEach(cleanup);
+
+const labStyles = postcss.parse(readFileSync("lab/src/lab.css", "utf8"));
+
+function topLevelDeclarationsFor(selector: string) {
+  const declarations = new Map<string, string>();
+
+  for (const node of labStyles.nodes) {
+    if (node.type === "rule" && node.selector === selector) {
+      node.walkDecls((declaration) => {
+        declarations.set(declaration.prop, declaration.value);
+      });
+    }
+  }
+
+  return declarations;
+}
 
 function renderPath(path: string) {
   window.history.replaceState(null, "", `#${path}`);
@@ -134,4 +151,32 @@ describe("public component documents", () => {
       ).toHaveLength(0);
     },
   );
+
+  it("provides a responsive documentation shell and contained workbench", () => {
+    expect(topLevelDeclarationsFor(".lab-app-shell").get("grid-template-columns")).toContain("rem");
+    expect(topLevelDeclarationsFor(".lab-sidebar").get("position")).toBe("sticky");
+    expect(topLevelDeclarationsFor(".lab-document").get("min-width")).toBe("0");
+    expect(topLevelDeclarationsFor(".lab-preview-surface").get("background")).toContain("--base-");
+    expect(topLevelDeclarationsFor(".lab-props-table-wrap").get("overflow-x")).toBe("auto");
+    expect(topLevelDeclarationsFor(".lab-app-shell").has("width")).toBe(false);
+
+    const narrowRules: Rule[] = [];
+    const reducedMotionRules: Rule[] = [];
+    labStyles.walkAtRules("media", (rule) => {
+      if (rule.params.includes("max-width")) {
+        rule.walkRules((nestedRule) => {
+          narrowRules.push(nestedRule);
+        });
+      }
+      if (rule.params.includes("prefers-reduced-motion")) {
+        rule.walkRules((nestedRule) => {
+          reducedMotionRules.push(nestedRule);
+        });
+      }
+    });
+
+    expect(narrowRules.some((rule) => rule.selector === ".lab-app-shell")).toBe(true);
+    expect(narrowRules.some((rule) => rule.selector.includes(".lab-nav"))).toBe(true);
+    expect(reducedMotionRules.some((rule) => rule.selector.includes(".lab-nav-link"))).toBe(true);
+  });
 });

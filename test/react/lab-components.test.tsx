@@ -225,6 +225,6 @@ describe("alpha component lab", () => {
       }
     });
     expect(narrowRules.length).toBeGreaterThan(0);
-    expect(declarationsFor(".lab-shell").get("width")).not.toMatch(/^\d+(?:\.\d+)?(?:px|rem)$/);
+    expect(declarationsFor(".lab-app-shell").has("width")).toBe(false);
   });
 });
