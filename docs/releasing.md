@@ -35,6 +35,8 @@ npm requires the package to exist before a trusted publisher can be configured. 
 
 The automation PR enters Changesets `alpha` pre-mode but deliberately leaves `package.json` at `0.0.0` and does not consume the three foundation changesets.
 
+After an alpha is published, each consumer-visible feature PR adds a top-level changeset for the next immutable alpha. The next version PR consumes those pending changesets before its release tag is created.
+
 For the version PR:
 
 1. Start from current `main`, run `pnpm install --frozen-lockfile`, then `pnpm version-packages`.

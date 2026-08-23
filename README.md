@@ -9,7 +9,7 @@ Read the [AI-first design contract](DESIGN.md) before changing tokens, component
 Install the package and its React peer dependencies:
 
 ```sh
-pnpm add @calebhill/base react react-dom
+pnpm add @calebhill/base motion react react-dom
 ```
 
 Import the complete package stylesheet once in the application entry point:
@@ -45,6 +45,42 @@ Apply product-specific branding by overriding semantic properties through the no
 
 The complete stylesheet exports opt-in `.base-type-*`, `.base-link*`, `.base-tabular-nums`, `.base-focus-ring`, and `.base-pressable` classes. It does not style `body`, reset elements, or require Tailwind.
 
+## Dialog
+
+Dialog is controlled. It owns the portal, focus entry and containment, Escape and backdrop dismissal, scroll locking, exit presence, and focus return.
+
+```tsx
+import { useState } from "react";
+import { Button, Dialog, DialogFooter, DialogHeading, TextInput } from "@calebhill/base";
+
+export function EditProfile() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Edit profile</Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogHeading
+          title="Edit profile"
+          subtitle="Update the details shown with your work."
+        />
+        <TextInput aria-label="Display name" />
+        <DialogFooter>
+          <Button onClick={() => setOpen(false)} variant="secondary">
+            Cancel
+          </Button>
+          <Button onClick={() => setOpen(false)}>Save</Button>
+        </DialogFooter>
+      </Dialog>
+    </>
+  );
+}
+```
+
+`DialogHeading` and `DialogFooter` are separate exports so the composition stays readable, but they are Dialog-specific parts rather than standalone page-layout components. `DialogHeading` requires Dialog context. `DialogFooter` supplies the action layout and does not close anything on its own.
+
+Escape and backdrop dismissal are enabled by default and can be controlled independently with `dismissOnEscape` and `dismissOnBackdrop`. Use `initialFocusRef` only when the first focusable control is not the right starting point. Consumers do not need a separate focus or scroll-lock hook.
+
 ## Development
 
 Install dependencies and run the same fail-fast gate used by CI:
@@ -76,7 +112,7 @@ See [docs/releasing.md](docs/releasing.md) for the Changesets, trusted-publishin
 
 ## Status
 
-Base is in public alpha. Its foundations and first action, input, and feedback primitives are available, with the component lab documenting current APIs and behavior.
+Base is in public alpha. Its foundations, Dialog system, and first action, input, and feedback primitives are available, with the component lab documenting current APIs and behavior.
 
 ## License
 
