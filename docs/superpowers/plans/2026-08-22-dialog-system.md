@@ -167,7 +167,7 @@ export type DialogProps = Omit<ComponentPropsWithoutRef<"div">, "aria-modal" | "
   portalContainer?: HTMLElement | null;
   onExitComplete?: () => void;
 };
-export type DialogHeadingProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
+export type DialogHeadingProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "title"> & {
   title: ReactNode;
   subtitle?: ReactNode;
   titleClassName?: string;

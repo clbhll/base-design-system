@@ -31,7 +31,7 @@ const valid = (
     data-track="dialog"
     ref={dialogRef}
   >
-    <DialogHeading title="Edit photo" subtitle="Update the caption." />
+    <DialogHeading title={<span>Edit photo</span>} subtitle="Update the caption." />
     <input ref={focusRef} />
     <DialogFooter>
       <button type="button">Save</button>

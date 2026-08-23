@@ -116,7 +116,7 @@ export type DialogProps = Omit<
 
 export type DialogHeadingProps = Omit<
   HTMLAttributes<HTMLDivElement>,
-  "children"
+  "children" | "title"
 > & {
   title: ReactNode;
   subtitle?: ReactNode;
