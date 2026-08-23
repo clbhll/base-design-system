@@ -2,7 +2,12 @@
 
 import {
   forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
   type ComponentPropsWithoutRef,
+  type ForwardedRef,
   type HTMLAttributes,
   type ReactNode,
   type RefObject,
@@ -47,6 +52,14 @@ export type DialogHeadingProps = Omit<
 
 export type DialogFooterProps = HTMLAttributes<HTMLDivElement>;
 
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
+}
+
 export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
   {
     children,
@@ -65,27 +78,108 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
   },
   ref,
 ) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isPresent, setIsPresent] = useState(open);
+  const exitCompletedRef = useRef(false);
+  const previousOpenRef = useRef(open);
+  const restoreFocusRef = useRef<HTMLElement>(null);
+  const setContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node;
+      assignRef(ref, node);
+    },
+    [ref],
+  );
+  const shouldRender = open || isPresent;
+
+  useEffect(() => {
+    if (open) {
+      exitCompletedRef.current = false;
+      setIsPresent(true);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (previousOpenRef.current && !open) {
+      const target = restoreFocusRef.current;
+      restoreFocusRef.current = null;
+      if (target?.isConnected) target.focus({ preventScroll: true });
+    }
+    previousOpenRef.current = open;
+  }, [open]);
+
+  const completeExit = useCallback(() => {
+    if (open || exitCompletedRef.current) return;
+    exitCompletedRef.current = true;
+    setIsPresent(false);
+    _onExitComplete?.();
+  }, [_onExitComplete, open]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    const handleAnimationEnd = (event: AnimationEvent) => {
+      if (event.target === content) completeExit();
+    };
+    content.addEventListener("animationend", handleAnimationEnd);
+    return () => content.removeEventListener("animationend", handleAnimationEnd);
+  }, [completeExit, shouldRender]);
+
   return (
-    <DialogPrimitive.Root onOpenChange={onOpenChange} open={open}>
-      <DialogPrimitive.Portal container={portalContainer ?? undefined}>
-        <DialogPrimitive.Overlay
-          className={["base-dialog-overlay", overlayClassName].filter(Boolean).join(" ")}
-        />
-        <DialogPrimitive.Content
-          {...surfaceProps}
-          ref={ref}
-          aria-modal="true"
-          className={[
-            "base-dialog",
-            `base-dialog-${size}`,
-            className,
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <motion.div className="base-dialog-layout">{children}</motion.div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
+    <DialogPrimitive.Root modal={open} onOpenChange={onOpenChange} open={open}>
+      {shouldRender ? (
+        <DialogPrimitive.Portal container={portalContainer ?? undefined} forceMount>
+          <DialogPrimitive.Overlay
+            className={["base-dialog-overlay", overlayClassName]
+              .filter(Boolean)
+              .join(" ")}
+            forceMount
+          />
+          <DialogPrimitive.Content
+            {...surfaceProps}
+            ref={setContentRef}
+            aria-modal="true"
+            className={[
+              "base-dialog",
+              `base-dialog-${size}`,
+              className,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            forceMount
+            onOpenAutoFocus={(event) => {
+              const activeElement = document.activeElement;
+              restoreFocusRef.current =
+                activeElement instanceof HTMLElement && activeElement !== document.body
+                  ? activeElement
+                  : null;
+
+              const target = _initialFocusRef?.current;
+              if (!target?.isConnected || !contentRef.current?.contains(target)) return;
+
+              event.preventDefault();
+              target.focus({ preventScroll: true });
+            }}
+            onCloseAutoFocus={(event) => {
+              const target = restoreFocusRef.current;
+              restoreFocusRef.current = null;
+              if (!target?.isConnected) return;
+
+              event.preventDefault();
+              target.focus({ preventScroll: true });
+            }}
+            onEscapeKeyDown={(event) => {
+              if (!_dismissOnEscape) event.preventDefault();
+            }}
+            onPointerDownOutside={(event) => {
+              if (!_dismissOnBackdrop) event.preventDefault();
+            }}
+          >
+            <motion.div className="base-dialog-layout">{children}</motion.div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      ) : null}
     </DialogPrimitive.Root>
   );
 });
