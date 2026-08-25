@@ -451,7 +451,7 @@ export async function runInstalledFixture({
     writeFileSync(fixturePackageJsonPath, `${JSON.stringify(fixturePackage, null, 2)}\n`);
 
     const installArgs = ["install"];
-    if (tarball) installArgs.push("--offline");
+    if (tarball) installArgs.push("--prefer-offline");
     installArgs.push("--no-lockfile", "--ignore-workspace", "--config.node-linker=isolated");
     if (!tarball) installArgs.push("--registry=https://registry.npmjs.org/");
     execFileSync("pnpm", installArgs, { cwd: runRoot, stdio: "inherit" });
