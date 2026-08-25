@@ -40,13 +40,13 @@ After an alpha is published, each consumer-visible feature PR adds a top-level c
 For the version PR:
 
 1. Start from current `main`, run `pnpm install --frozen-lockfile`, then `pnpm version-packages`.
-2. For the first alpha, require exactly `0.1.0-alpha.0`, the intended changelog entries, no pending top-level `.changeset/*.md` files, the three consumed changesets retained under `.changeset/pre`, and retained `.changeset/pre.json` alpha mode. Later alpha version PRs follow the same review and advance the prerelease number without rewriting a published version.
+2. Require the intended alpha version and changelog entries, no pending top-level `.changeset/*.md` files, every consumed changeset retained under `.changeset/pre`, and retained `.changeset/pre.json` alpha mode. The first alpha was `0.1.0-alpha.0`; later alpha version PRs advance the prerelease number without rewriting a published version.
 3. Run the simplification pass, `pnpm verify`, `pnpm tsc --noEmit`, and `git diff --check`. Review and merge the exact verified head.
 4. On clean, current `main`, create an annotated tag at the exact merge commit and push only that tag:
 
    ```sh
-   git tag -a v0.1.0-alpha.0 -m "@calebhill/base@0.1.0-alpha.0"
-   git push origin v0.1.0-alpha.0
+   git tag -a v0.1.0-alpha.1 -m "@calebhill/base@0.1.0-alpha.1"
+   git push origin v0.1.0-alpha.1
    ```
 
 The tag must match `v${package.version}`, match `v*-alpha.*`, and point to a commit contained in `origin/main`. The candidate-preparation job rejects pending release changesets, wrong package metadata, a non-alpha version, a mismatched tag, or a registry version that already exists.
@@ -62,8 +62,8 @@ The release workflow has three jobs:
 After the workflow succeeds, independently run:
 
 ```sh
-npm view @calebhill/base@0.1.0-alpha.0 version dist-tags repository dist --json
-pnpm fixture:registry -- 0.1.0-alpha.0
+npm view @calebhill/base@0.1.0-alpha.1 version dist-tags repository dist --json
+pnpm fixture:registry -- 0.1.0-alpha.1
 ```
 
 The npm provenance view must identify `clbhll/base-design-system`, `.github/workflows/release.yml`, the release tag, and its exact commit. `StatusTag` must remain absent from runtime exports, declarations, CSS, tarball files, and consumer fixtures.

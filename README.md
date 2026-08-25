@@ -107,7 +107,7 @@ pnpm fixture:test
 Registry verification is release-only and requires an exact published prerelease:
 
 ```sh
-pnpm fixture:registry -- 0.1.0-alpha.0
+pnpm fixture:registry -- 0.1.0-alpha.1
 ```
 
 See [docs/releasing.md](docs/releasing.md) for the Changesets, trusted-publishing, verification, and rollback runbook. Public alphas publish under npm's `next` tag; `StatusTag` remains documentation-only and is never consumable from the package.
