@@ -193,9 +193,12 @@ describe("installed registry artifact seams", () => {
 
   it("rejects a candidate whose installed manifest is mutated before runner validation", async () => {
     const candidate = createCandidateTarball();
+    const storeRoot = mkdtempSync(join(tmpdir(), "base-fixture-store-"));
+    const originalStoreDirectory = process.env.npm_config_store_dir;
     let temporaryRoot = "";
 
     try {
+      process.env.npm_config_store_dir = storeRoot;
       await expect(
         runInstalledFixture({
           fixtureTemplate: "vite-smoke",
@@ -217,7 +220,13 @@ describe("installed registry artifact seams", () => {
       expect(temporaryRoot).not.toBe("");
       expect(() => readFileSync(join(temporaryRoot, "run/package.json"))).toThrow();
     } finally {
+      if (originalStoreDirectory === undefined) {
+        delete process.env.npm_config_store_dir;
+      } else {
+        process.env.npm_config_store_dir = originalStoreDirectory;
+      }
       rmSync(candidate.root, { force: true, recursive: true });
+      rmSync(storeRoot, { force: true, recursive: true });
     }
   });
 

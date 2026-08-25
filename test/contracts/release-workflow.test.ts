@@ -30,7 +30,8 @@ import {
   verifyRegistryPackage,
 } from "../../scripts/verify-registry-package.mjs";
 
-const version = "0.1.0-alpha.0";
+const version = "0.1.0-alpha.1";
+const otherVersion = "0.1.0-alpha.2";
 const packageJson = {
   name: "@calebhill/base",
   version,
@@ -72,9 +73,9 @@ function registryMetadata(overrides: Record<string, unknown> = {}) {
       dist: {
         integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
         tarball:
-          "https://registry.npmjs.org/@calebhill/base/-/base-0.1.0-alpha.0.tgz",
+          `https://registry.npmjs.org/@calebhill/base/-/base-${version}.tgz`,
         attestations: {
-          url: "https://registry.npmjs.org/-/npm/v1/attestations/@calebhill%2fbase@0.1.0-alpha.0",
+          url: `https://registry.npmjs.org/-/npm/v1/attestations/@calebhill%2fbase@${version}`,
           provenance: {
             predicateType: "https://slsa.dev/provenance/v1",
           },
@@ -164,7 +165,7 @@ describe("release preparation state", () => {
   });
 
   it.each([
-    ["a tag that differs from package.version", { tag: "v0.1.0-alpha.1" }, /tag.*version/i],
+    ["a tag that differs from package.version", { tag: `v${otherVersion}` }, /tag.*version/i],
     ["a non-alpha prerelease", { tag: "v0.1.0-beta.0" }, /alpha/i],
     ["Changesets outside alpha mode", { preState: { ...preState, tag: "beta" } }, /alpha/i],
     ["a pending release changeset", { pendingChangesets: ["pending.md"] }, /pending.*changeset/i],
@@ -289,7 +290,7 @@ describe("deterministic candidate preparation", () => {
 
   it.each([
     ["name", { name: "@calebhill/other" }, /candidate.*name/i],
-    ["version", { version: "0.1.0-alpha.1" }, /candidate.*version/i],
+    ["version", { version: otherVersion }, /candidate.*version/i],
     [
       "repository",
       { repository: { type: "git", url: "git+https://github.com/example/base.git" } },
@@ -344,7 +345,7 @@ describe("deterministic candidate preparation", () => {
     expect(() => assertReleaseCandidateIdentity(packageJson, packageJson)).not.toThrow();
     expect(() =>
       assertReleaseCandidateIdentity(
-        { ...packageJson, version: "0.1.0-alpha.1" },
+        { ...packageJson, version: otherVersion },
         packageJson,
       ),
     ).toThrow(/candidate.*version/i);
@@ -368,7 +369,7 @@ describe("deterministic candidate preparation", () => {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
       writeFileSync(
         manifestPath,
-        `${JSON.stringify({ ...manifest, version: "0.1.0-alpha.1" }, null, 2)}\n`,
+        `${JSON.stringify({ ...manifest, version: otherVersion }, null, 2)}\n`,
       );
       const swapped = join(packedRoot, "swapped-valid-base.tgz");
       execFileSync(
@@ -442,7 +443,7 @@ describe("exact registry artifact verification", () => {
   });
 
   it.each([
-    ["the wrong next tag", { packageDocument: { "dist-tags": { next: "0.1.0-alpha.1" } } }, /next/i],
+    ["the wrong next tag", { packageDocument: { "dist-tags": { next: otherVersion } } }, /next/i],
     [
       "a non-official tarball origin",
       { dist: { tarball: "https://registry.example.test/base.tgz" } },
@@ -857,7 +858,7 @@ describe("release workflow contract", () => {
     }
   });
 
-  it("versions the first alpha while keeping the ordinary verify gate offline", () => {
+  it("versions the current alpha while keeping the ordinary verify gate offline", () => {
     const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
       scripts: Record<string, string>;
       version: string;
@@ -868,7 +869,7 @@ describe("release workflow contract", () => {
     expect(manifest.scripts.verify).not.toMatch(/fixture:registry|verify-registry-package/);
   });
 
-  it("keeps alpha pre-mode and preserves the next release changeset", () => {
+  it("keeps alpha pre-mode and preserves the complete release history", () => {
     const state = JSON.parse(readFileSync(".changeset/pre.json", "utf8")) as {
       mode: string;
       tag: string;
@@ -876,6 +877,7 @@ describe("release workflow contract", () => {
     const releaseChangesets = [
       "brave-actions-arrive.md",
       "bright-bases-bloom.md",
+      "calm-dialogs-arrive.md",
       "calm-primitives-grow.md",
     ];
     const pendingChangesets = readdirSync(".changeset")
@@ -888,9 +890,15 @@ describe("release workflow contract", () => {
 
     expect(state.mode).toBe("pre");
     expect(state.tag).toBe("alpha");
-    expect(pendingChangesets).toEqual(["calm-dialogs-arrive.md"]);
+    expect(pendingChangesets).toEqual([]);
     expect(archivedChangesets).toEqual(releaseChangesets);
     expect(changelog).toBe(`# @calebhill/base
+
+## 0.1.0-alpha.1
+
+### Minor Changes
+
+- 21b63d2: Add the controlled, accessible Dialog system with package-owned focus, dismissal, presence, layout, and reduced-motion behavior.
 
 ## 0.1.0-alpha.0
 
@@ -907,7 +915,7 @@ describe("release workflow contract", () => {
 
     expect(runbook).toContain("npm's required `latest` tag");
     expect(runbook).toContain("no pending top-level `.changeset/*.md` files");
-    expect(runbook).toContain("the three consumed changesets retained under `.changeset/pre`");
+    expect(runbook).toContain("every consumed changeset retained under `.changeset/pre`");
     expect(runbook).toContain("`latest` still points to the deprecated `0.0.0` bootstrap");
     expect(runbook).toContain("An alpha must never receive `latest`");
   });

@@ -1,5 +1,11 @@
 # @calebhill/base
 
+## 0.1.0-alpha.1
+
+### Minor Changes
+
+- 21b63d2: Add the controlled, accessible Dialog system with package-owned focus, dismissal, presence, layout, and reduced-motion behavior.
+
 ## 0.1.0-alpha.0
 
 ### Minor Changes
