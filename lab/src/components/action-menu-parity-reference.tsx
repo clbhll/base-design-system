@@ -28,15 +28,6 @@ export function ActionMenuParityReference() {
         >
           Delete
         </button>
-        <button
-          className="lab-action-menu-reference-item"
-          data-disabled=""
-          disabled
-          tabIndex={-1}
-          type="button"
-        >
-          Unavailable
-        </button>
       </div>
     </div>
   );

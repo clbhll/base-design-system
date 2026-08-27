@@ -523,6 +523,7 @@ body {
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 10%),
     0 4px 6px -4px rgb(0 0 0 / 10%);
+  transform: translateY(0) scale(1);
 }
 
 .lab-action-menu-reference-item {
@@ -543,6 +544,7 @@ body {
   font-weight: var(--base-ref-font-weight-medium);
   letter-spacing: var(--base-ref-letter-spacing-compact);
   text-align: left;
+  transform: translateY(0) scale(1);
 }
 
 .lab-action-menu-reference-item[data-tone="destructive"] {

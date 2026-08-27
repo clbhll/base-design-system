@@ -162,10 +162,16 @@ describe("alpha component lab", () => {
   it("keeps the photos.me parity reference lab-only", () => {
     renderPath("/components/action-menu");
 
-    expect(screen.getByTestId("action-menu-parity-reference")).toHaveAttribute(
+    const reference = screen.getByTestId("action-menu-parity-reference");
+    expect(reference).toHaveAttribute(
       "aria-label",
       "photos.me reference",
     );
+    expect(
+      Array.from(reference.querySelectorAll(".lab-action-menu-reference-item"), (item) =>
+        item.textContent?.trim(),
+      ),
+    ).toEqual(["Edit", "Delete"]);
     expect(screen.getByText("Base ActionMenu reference")).toBeVisible();
 
     const packageArtifacts = [

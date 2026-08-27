@@ -15,7 +15,6 @@ import { Specimen } from "../components/specimen";
 const parityItems = [
   { label: "Edit", onSelect: () => undefined },
   { label: "Delete", tone: "destructive" as const, onSelect: () => undefined },
-  { label: "Unavailable", disabled: true, onSelect: () => undefined },
 ] as const;
 
 export function ActionMenuDocument() {

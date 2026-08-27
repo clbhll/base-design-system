@@ -52,18 +52,22 @@ describe("ActionMenu CSS contract", () => {
   });
 
   it("matches the hand-rolled trigger, surface, and item geometry", () => {
+    const surface = declarations(stylesheet, ".base-action-menu-content");
     expect(Object.fromEntries(declarations(stylesheet, ".base-action-menu-trigger"))).toMatchObject({
       "border-radius": "0.75rem",
       height: "2.25rem",
       width: "2.25rem",
     });
-    expect(Object.fromEntries(declarations(stylesheet, ".base-action-menu-content"))).toMatchObject({
+    expect(Object.fromEntries(surface)).toMatchObject({
       "border-radius": "1rem",
       "border-width": "1px",
       "min-width": "9rem",
       overflow: "hidden",
       padding: "0.25rem",
     });
+    expect(surface.get("box-shadow")?.replace(/\s+/g, " ")).toBe(
+      "0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%)",
+    );
     expect(Object.fromEntries(declarations(stylesheet, ".base-action-menu-item"))).toMatchObject({
       "border-radius": "0.75rem",
       "font-size": "var(--base-ref-font-size-350)",

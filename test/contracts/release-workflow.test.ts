@@ -869,7 +869,7 @@ describe("release workflow contract", () => {
     expect(manifest.scripts.verify).not.toMatch(/fixture:registry|verify-registry-package/);
   });
 
-  it("keeps alpha pre-mode and preserves the complete release history", () => {
+  it("keeps alpha pre-mode, queues ActionMenu, and preserves release history", () => {
     const state = JSON.parse(readFileSync(".changeset/pre.json", "utf8")) as {
       mode: string;
       tag: string;
@@ -890,7 +890,7 @@ describe("release workflow contract", () => {
 
     expect(state.mode).toBe("pre");
     expect(state.tag).toBe("alpha");
-    expect(pendingChangesets).toEqual([]);
+    expect(pendingChangesets).toEqual(["calm-menus-open.md"]);
     expect(archivedChangesets).toEqual(releaseChangesets);
     expect(changelog).toBe(`# @calebhill/base
 

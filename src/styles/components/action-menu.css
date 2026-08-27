@@ -29,10 +29,8 @@
   border-radius: 1rem;
   corner-shape: squircle;
   box-shadow:
-    0 10px 15px -3px
-      color-mix(in srgb, var(--base-ref-color-neutral-1000) 10%, transparent),
-    0 4px 6px -4px
-      color-mix(in srgb, var(--base-ref-color-neutral-1000) 10%, transparent);
+    0 10px 15px -3px rgb(0 0 0 / 10%),
+    0 4px 6px -4px rgb(0 0 0 / 10%);
   outline: none;
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 }

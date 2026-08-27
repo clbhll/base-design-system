@@ -1,4 +1,4 @@
-import { createRef, useRef, useState } from "react";
+import { createRef, useState } from "react";
 import {
   cleanup,
   fireEvent,
@@ -202,18 +202,18 @@ describe("ActionMenu selection handoff and focus restoration", () => {
 });
 
 function OpenMenu({ theme }: { theme: "light" | "dark" }) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(true);
 
   return (
-    <div data-base-theme={theme} ref={rootRef}>
+    <div data-base-theme={theme} ref={setRoot}>
       <ActionMenu
         icon={<MoreIcon />}
         items={items}
         label={`${theme} options`}
         onOpenChange={setOpen}
         open={open}
-        portalContainer={rootRef.current}
+        portalContainer={root}
       />
     </div>
   );
