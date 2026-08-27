@@ -1,5 +1,5 @@
 import { globSync, readFileSync } from "node:fs";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import postcss, { type Rule } from "postcss";
 import { axe } from "vitest-axe";
@@ -143,6 +143,43 @@ describe("alpha component lab", () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it("exercises ActionMenu selection and restores its trigger", async () => {
+    const user = userEvent.setup();
+    renderPath("/components/action-menu");
+
+    const trigger = screen.getByRole("button", { name: "Photo options" });
+    await user.click(trigger);
+    const menu = screen.getByRole("menu", { name: "Photo options" });
+    expect(within(menu).getByRole("menuitem", { name: "Unavailable" })).toHaveAttribute(
+      "data-disabled",
+    );
+
+    await user.click(within(menu).getByRole("menuitem", { name: "Edit" }));
+    expect(await screen.findByText("Selected: Edit")).toBeVisible();
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("keeps the photos.me parity reference lab-only", () => {
+    renderPath("/components/action-menu");
+
+    expect(screen.getByTestId("action-menu-parity-reference")).toHaveAttribute(
+      "aria-label",
+      "photos.me reference",
+    );
+    expect(screen.getByText("Base ActionMenu reference")).toBeVisible();
+
+    const packageArtifacts = [
+      "src/index.ts",
+      "src/styles/styles.css",
+      "src/styles/components/action-menu.css",
+      "package.json",
+    ]
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
+    expect(packageArtifacts).not.toContain("ActionMenuParityReference");
+    expect(packageArtifacts).not.toContain("lab-action-menu-reference");
+  });
+
   it("keeps consumption on public package paths and StatusTag out of the package", () => {
     const labSource = globSync("lab/src/**/*.tsx")
       .map((path) => readFileSync(path, "utf8"))
@@ -155,6 +192,7 @@ describe("alpha component lab", () => {
       "src/styles/components/text-input.css",
       "src/styles/components/progress-bar.css",
       "src/styles/components/dialog.css",
+      "src/styles/components/action-menu.css",
     ]
       .map((path) => readFileSync(path, "utf8"))
       .join("\n");

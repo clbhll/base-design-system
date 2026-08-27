@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import { ButtonLinkDocument } from "./documents/button-link";
 import { ButtonDocument } from "./documents/button";
+import { ActionMenuDocument } from "./documents/action-menu";
 import { DialogDocument } from "./documents/dialog";
 import { FoundationsDocument } from "./documents/foundations";
 import { IconsDocument } from "./documents/icons";
@@ -35,6 +36,12 @@ export const labDocuments = [
     label: "Button Link",
     group: "components",
     Document: ButtonLinkDocument,
+  },
+  {
+    path: "/components/action-menu",
+    label: "ActionMenu",
+    group: "components",
+    Document: ActionMenuDocument,
   },
   {
     path: "/components/text-input",
