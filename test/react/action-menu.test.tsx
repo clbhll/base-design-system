@@ -230,3 +230,25 @@ describe("ActionMenu accessibility", () => {
     ).toHaveLength(0);
   });
 });
+
+describe("ActionMenu motion", () => {
+  it("enters from the proven surface and item geometry", () => {
+    render(
+      <ActionMenu
+        defaultOpen
+        icon={<MoreIcon />}
+        items={[{ label: "Edit", onSelect: () => undefined }]}
+        label="Motion options"
+      />,
+    );
+
+    expect(screen.getByRole("menu", { name: "Motion options" })).toHaveStyle({
+      opacity: "0",
+      transform: "translateY(4px) scale(0.95)",
+    });
+    expect(screen.getByRole("menuitem", { name: "Edit" })).toHaveStyle({
+      opacity: "0",
+      transform: "translateY(3px) scale(0.95)",
+    });
+  });
+});

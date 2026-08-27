@@ -7,9 +7,68 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
+import { easingConfigs, springConfigs } from "@calebhill/animations";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import { DropdownMenu } from "radix-ui";
 
 import { Button } from "./button";
+
+const weightedEaseOut = easingConfigs.general.ease ?? [0.22, 1, 0.36, 1];
+const quickEaseOut = [0.16, 1, 0.3, 1] as const;
+
+function surfaceVariants(reduceMotion: boolean): Variants {
+  const identity = "translateY(0px) scale(1)";
+  const closedTransform = reduceMotion
+    ? identity
+    : "translateY(4px) scale(0.95)";
+
+  return {
+    closed: {
+      opacity: 0,
+      transform: closedTransform,
+      transition: {
+        duration: 0.12,
+        ease: weightedEaseOut,
+        staggerChildren: reduceMotion ? 0 : 0.04,
+        staggerDirection: -1,
+      },
+    },
+    open: {
+      opacity: 1,
+      transform: identity,
+      transition: reduceMotion
+        ? { duration: 0.12, ease: weightedEaseOut }
+        : {
+            opacity: { duration: 0.18, ease: quickEaseOut },
+            transform: springConfigs.press,
+            delayChildren: 0.03,
+            staggerChildren: 0.04,
+          },
+    },
+  };
+}
+
+function itemVariants(reduceMotion: boolean): Variants {
+  const identity = "translateY(0px) scale(1)";
+
+  return {
+    closed: {
+      opacity: 0,
+      transform: reduceMotion ? identity : "translateY(3px) scale(0.95)",
+      transition: { duration: 0.12, ease: weightedEaseOut },
+    },
+    open: {
+      opacity: 1,
+      transform: identity,
+      transition: reduceMotion
+        ? { duration: 0.12, ease: weightedEaseOut }
+        : {
+            opacity: { duration: 0.18, ease: quickEaseOut },
+            transform: springConfigs.press,
+          },
+    },
+  };
+}
 
 export type ActionMenuItemTone = "default" | "destructive";
 export type ActionMenuSide = "top" | "right" | "bottom" | "left";
@@ -78,7 +137,10 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
     const contentRef = useRef<HTMLDivElement>(null);
     const pendingSelectionRef = useRef<(() => void) | null>(null);
     const selectionCloseRequestRef = useRef(false);
+    const reduceMotion = useReducedMotion() ?? false;
     const resolvedOpen = open ?? uncontrolledOpen;
+    const actionMenuSurfaceVariants = surfaceVariants(reduceMotion);
+    const actionMenuItemVariants = itemVariants(reduceMotion);
 
     function setOpen(nextOpen: boolean) {
       if (!nextOpen) {
@@ -130,6 +192,7 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
         </div>
         <DropdownMenu.Portal container={portalContainer ?? undefined}>
           <DropdownMenu.Content
+            asChild
             ref={contentRef}
             aria-label={label}
             align={align}
@@ -147,26 +210,38 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
             side={side}
             sideOffset={sideOffset}
           >
-            {items.map((item) => (
-              <DropdownMenu.Item
-                asChild
-                disabled={item.disabled}
-                key={item.label}
-                onSelect={() => {
-                  if (pendingSelectionRef.current) return;
-                  pendingSelectionRef.current = item.onSelect;
-                  selectionCloseRequestRef.current = true;
-                }}
-              >
-                <button
-                  className="base-action-menu-item"
-                  data-tone={item.tone ?? "default"}
-                  type="button"
+            <motion.div
+              animate={resolvedOpen ? "open" : "closed"}
+              initial="closed"
+              variants={actionMenuSurfaceVariants}
+            >
+              {items.map((item) => (
+                <DropdownMenu.Item
+                  asChild
+                  disabled={item.disabled}
+                  key={item.label}
+                  onSelect={() => {
+                    if (pendingSelectionRef.current) return;
+                    pendingSelectionRef.current = item.onSelect;
+                    selectionCloseRequestRef.current = true;
+                  }}
                 >
-                  {item.label}
-                </button>
-              </DropdownMenu.Item>
-            ))}
+                  <motion.button
+                    className="base-action-menu-item"
+                    data-tone={item.tone ?? "default"}
+                    type="button"
+                    variants={actionMenuItemVariants}
+                    whileTap={
+                      reduceMotion
+                        ? { opacity: 0.8, transition: { duration: 0.15 } }
+                        : { scale: 0.97, transition: springConfigs.press }
+                    }
+                  >
+                    {item.label}
+                  </motion.button>
+                </DropdownMenu.Item>
+              ))}
+            </motion.div>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

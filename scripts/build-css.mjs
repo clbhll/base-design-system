@@ -7,6 +7,7 @@ const componentStylePaths = [
   new URL("../src/styles/components/text-input.css", import.meta.url),
   new URL("../src/styles/components/progress-bar.css", import.meta.url),
   new URL("../src/styles/components/dialog.css", import.meta.url),
+  new URL("../src/styles/components/action-menu.css", import.meta.url),
 ];
 const distDir = new URL("../dist/", import.meta.url);
 
