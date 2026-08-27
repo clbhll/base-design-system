@@ -16,6 +16,7 @@ export const expectedTarballFiles = [
 ].sort();
 
 export const expectedRuntimeExports = [
+  "ActionMenu",
   "BASE_THEME_ATTRIBUTE",
   "Button",
   "ButtonLink",
@@ -30,6 +31,12 @@ export const expectedRuntimeExports = [
 ].sort();
 
 export const expectedDeclarationNames = [
+  "ActionMenu",
+  "ActionMenuAlign",
+  "ActionMenuItem",
+  "ActionMenuItemTone",
+  "ActionMenuProps",
+  "ActionMenuSide",
   "BASE_THEME_ATTRIBUTE",
   "BaseTheme",
   "Button",
@@ -103,6 +110,7 @@ const approvedTsupSourceLabels = new Set([
   "src/components/text-input.tsx",
   "src/components/progress-bar.tsx",
   "src/components/dialog.tsx",
+  "src/components/action-menu.tsx",
   "src/components/icons/more-icon.tsx",
   "src/components/icons/trash-icon.tsx",
 ]);

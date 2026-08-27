@@ -20,6 +20,7 @@ import { assertPackageTarball } from "./assert-tarball-contents.mjs";
 
 const exactVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
 const expectedFixtureRuntimeImports = [
+  "ActionMenu",
   "BASE_THEME_ATTRIBUTE",
   "Button",
   "ButtonLink",
@@ -33,6 +34,11 @@ const expectedFixtureRuntimeImports = [
   "isBaseTheme",
 ].sort();
 const expectedFixtureTypeImports = [
+  "ActionMenuAlign",
+  "ActionMenuItem",
+  "ActionMenuItemTone",
+  "ActionMenuProps",
+  "ActionMenuSide",
   "BaseTheme",
   "ButtonLinkProps",
   "ButtonProps",
