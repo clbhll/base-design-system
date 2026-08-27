@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useRef,
   useState,
   type HTMLAttributes,
   type ReactNode,
@@ -74,9 +75,19 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
     ref,
   ) {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen ?? false);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const pendingSelectionRef = useRef<(() => void) | null>(null);
+    const selectionCloseRequestRef = useRef(false);
     const resolvedOpen = open ?? uncontrolledOpen;
 
     function setOpen(nextOpen: boolean) {
+      if (!nextOpen) {
+        if (selectionCloseRequestRef.current) {
+          selectionCloseRequestRef.current = false;
+        } else {
+          pendingSelectionRef.current = null;
+        }
+      }
       if (open === undefined) setUncontrolledOpen(nextOpen);
       onOpenChange?.(nextOpen);
     }
@@ -96,6 +107,17 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
                 .filter(Boolean)
                 .join(" ")}
               disabled={disabled}
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowUp" || resolvedOpen) return;
+                event.preventDefault();
+                setOpen(true);
+                requestAnimationFrame(() => {
+                  const enabledItems = contentRef.current?.querySelectorAll<HTMLElement>(
+                    '[role="menuitem"]:not([data-disabled])',
+                  );
+                  enabledItems?.item(enabledItems.length - 1).focus();
+                });
+              }}
               size="icon"
               title={label}
               variant="text"
@@ -108,21 +130,38 @@ export const ActionMenu = forwardRef<HTMLButtonElement, ActionMenuProps>(
         </div>
         <DropdownMenu.Portal container={portalContainer ?? undefined}>
           <DropdownMenu.Content
+            ref={contentRef}
             aria-label={label}
             align={align}
             className={["base-action-menu-content", contentClassName]
               .filter(Boolean)
               .join(" ")}
+            loop
+            onCloseAutoFocus={() => {
+              queueMicrotask(() => {
+                const selection = pendingSelectionRef.current;
+                pendingSelectionRef.current = null;
+                selection?.();
+              });
+            }}
             side={side}
             sideOffset={sideOffset}
           >
             {items.map((item) => (
-              <DropdownMenu.Item asChild disabled={item.disabled} key={item.label}>
+              <DropdownMenu.Item
+                asChild
+                disabled={item.disabled}
+                key={item.label}
+                onSelect={() => {
+                  if (pendingSelectionRef.current) return;
+                  pendingSelectionRef.current = item.onSelect;
+                  selectionCloseRequestRef.current = true;
+                }}
+              >
                 <button
                   className="base-action-menu-item"
                   data-tone={item.tone ?? "default"}
                   type="button"
-                  onClick={item.onSelect}
                 >
                   {item.label}
                 </button>
