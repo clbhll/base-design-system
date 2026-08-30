@@ -72,6 +72,7 @@ function writeExtractedPackage(root: string) {
     [
       '"use client";',
       'export const BASE_THEME_ATTRIBUTE = "data-base-theme";',
+      "export const ActionMenu = null;",
       "export const Button = null;",
       "export const ButtonLink = null;",
       "export const Dialog = null;",
@@ -88,6 +89,12 @@ function writeExtractedPackage(root: string) {
     join(root, "dist/index.d.ts"),
     [
       'export declare const BASE_THEME_ATTRIBUTE: "data-base-theme";',
+      "export declare const ActionMenu: unknown;",
+      "export type ActionMenuAlign = 'start' | 'center' | 'end';",
+      "export type ActionMenuItem = {};",
+      "export type ActionMenuItemTone = 'default' | 'destructive';",
+      "export type ActionMenuProps = {};",
+      "export type ActionMenuSide = 'top' | 'right' | 'bottom' | 'left';",
       "export type BaseTheme = 'light' | 'dark';",
       "export declare const Button: unknown;",
       "export type ButtonProps = {};",
@@ -119,6 +126,7 @@ function writeExtractedPackage(root: string) {
       "/* base-component: text-input */ .base-text-input {}",
       "/* base-component: progress-bar */ .base-progress-bar {}",
       "/* base-component: dialog */ .base-dialog {}",
+      "/* base-component: action-menu */ .base-action-menu {}",
     ].join("\n"),
   );
 }

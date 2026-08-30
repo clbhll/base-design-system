@@ -2,6 +2,7 @@
 
 import {
   BASE_THEME_ATTRIBUTE,
+  ActionMenu,
   Button,
   ButtonLink,
   Dialog,
@@ -13,6 +14,11 @@ import {
   TrashIcon,
   isBaseTheme,
   type BaseTheme,
+  type ActionMenuAlign,
+  type ActionMenuItem,
+  type ActionMenuItemTone,
+  type ActionMenuProps,
+  type ActionMenuSide,
   type ButtonLinkProps,
   type ButtonProps,
   type ButtonSize,
@@ -26,6 +32,18 @@ import {
 } from "@calebhill/base";
 
 const buttonProps = { type: "button" } satisfies ButtonProps;
+const actionMenuTone = "destructive" satisfies ActionMenuItemTone;
+const actionMenuItems = [
+  { label: "Edit", onSelect: () => undefined },
+  { label: "Delete", onSelect: () => undefined, tone: actionMenuTone },
+] satisfies readonly ActionMenuItem[];
+const actionMenuProps = {
+  align: "end" satisfies ActionMenuAlign,
+  icon: <MoreIcon />,
+  items: actionMenuItems,
+  label: "Fixture options",
+  side: "top" satisfies ActionMenuSide,
+} satisfies ActionMenuProps;
 const buttonLinkProps = { target: "_self" } satisfies ButtonLinkProps;
 const buttonSize = "default" satisfies ButtonSize;
 const buttonVariant = "primary" satisfies ButtonVariant;
@@ -60,6 +78,7 @@ export default function Page() {
       <Button aria-label="Delete" size="icon" variant="destructive">
         <TrashIcon />
       </Button>
+      <ActionMenu {...actionMenuProps} />
       <TextInput {...textInputProps} />
       <ProgressBar {...progressBarProps} />
       <Dialog {...dialogProps}>

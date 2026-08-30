@@ -45,6 +45,11 @@ const componentDocuments = [
     "Button Link",
     'import { ButtonLink, MoreIcon } from "@calebhill/base";',
   ],
+  [
+    "/components/action-menu",
+    "ActionMenu",
+    'import { ActionMenu, MoreIcon } from "@calebhill/base";',
+  ],
   ["/components/text-input", "Text Input", 'import { TextInput } from "@calebhill/base";'],
   ["/components/progress-bar", "Progress Bar", 'import { ProgressBar } from "@calebhill/base";'],
   [
@@ -61,6 +66,7 @@ describe("public component documents", () => {
       "/foundations",
       "/components/button",
       "/components/button-link",
+      "/components/action-menu",
       "/components/text-input",
       "/components/progress-bar",
       "/components/dialog",
@@ -132,6 +138,7 @@ describe("public component documents", () => {
       "src/styles/components/text-input.css",
       "src/styles/components/progress-bar.css",
       "src/styles/components/dialog.css",
+      "src/styles/components/action-menu.css",
       "package.json",
     ]
       .map((path) => readFileSync(path, "utf8"))
@@ -156,7 +163,7 @@ describe("public component documents", () => {
     expect(packageArtifacts).not.toContain("--lab-status-beta");
   });
 
-  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog"])(
+  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog", "/components/action-menu"])(
     "has no representative automated accessibility violations at %s",
     async (path) => {
       const { container } = renderPath(path);

@@ -81,6 +81,31 @@ export function EditProfile() {
 
 Escape and backdrop dismissal are enabled by default and can be controlled independently with `dismissOnEscape` and `dismissOnBackdrop`. Use `initialFocusRef` only when the first focusable control is not the right starting point. Consumers do not need a separate focus or scroll-lock hook.
 
+## ActionMenu
+
+ActionMenu turns a compact icon trigger into a typed list of actions. It owns positioning, keyboard navigation, focus return, and selection handoff so the action runs after the menu has closed and focus is back on the trigger.
+
+```tsx
+import { ActionMenu, MoreIcon, type ActionMenuItem } from "@calebhill/base";
+
+const items = [
+  { label: "Rename", onSelect: () => renamePhoto() },
+  { label: "Delete", tone: "destructive", onSelect: () => deletePhoto() },
+] satisfies readonly ActionMenuItem[];
+
+export function PhotoActions() {
+  return (
+    <ActionMenu
+      icon={<MoreIcon />}
+      items={items}
+      label="Photo options"
+    />
+  );
+}
+```
+
+The menu is uncontrolled by default and opens above the trigger, aligned to its trailing edge with an 8px gap. Use `open` with `onOpenChange` for controlled state, or adjust `side`, `align`, and `sideOffset` when the surrounding layout needs another placement. Disabled actions stay visible but cannot receive focus or run their callback.
+
 ## Development
 
 Install dependencies and run the same fail-fast gate used by CI:
