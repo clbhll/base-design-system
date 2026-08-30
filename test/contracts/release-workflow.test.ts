@@ -30,8 +30,8 @@ import {
   verifyRegistryPackage,
 } from "../../scripts/verify-registry-package.mjs";
 
-const version = "0.1.0-alpha.1";
-const otherVersion = "0.1.0-alpha.2";
+const version = "0.1.0-alpha.2";
+const otherVersion = "0.1.0-alpha.3";
 const packageJson = {
   name: "@calebhill/base",
   version,
@@ -869,7 +869,7 @@ describe("release workflow contract", () => {
     expect(manifest.scripts.verify).not.toMatch(/fixture:registry|verify-registry-package/);
   });
 
-  it("keeps alpha pre-mode, queues ActionMenu, and preserves release history", () => {
+  it("keeps alpha pre-mode and preserves the complete release history", () => {
     const state = JSON.parse(readFileSync(".changeset/pre.json", "utf8")) as {
       mode: string;
       tag: string;
@@ -878,6 +878,7 @@ describe("release workflow contract", () => {
       "brave-actions-arrive.md",
       "bright-bases-bloom.md",
       "calm-dialogs-arrive.md",
+      "calm-menus-open.md",
       "calm-primitives-grow.md",
     ];
     const pendingChangesets = readdirSync(".changeset")
@@ -890,9 +891,15 @@ describe("release workflow contract", () => {
 
     expect(state.mode).toBe("pre");
     expect(state.tag).toBe("alpha");
-    expect(pendingChangesets).toEqual(["calm-menus-open.md"]);
+    expect(pendingChangesets).toEqual([]);
     expect(archivedChangesets).toEqual(releaseChangesets);
     expect(changelog).toBe(`# @calebhill/base
+
+## 0.1.0-alpha.2
+
+### Minor Changes
+
+- c064b36: Add a beta ActionMenu with typed actions, complete keyboard navigation, collision-aware positioning, focus-safe selection handoff, and photos.me visual parity.
 
 ## 0.1.0-alpha.1
 
