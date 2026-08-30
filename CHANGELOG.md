@@ -1,5 +1,11 @@
 # @calebhill/base
 
+## 0.1.0-alpha.2
+
+### Minor Changes
+
+- c064b36: Add a beta ActionMenu with typed actions, complete keyboard navigation, collision-aware positioning, focus-safe selection handoff, and photos.me visual parity.
+
 ## 0.1.0-alpha.1
 
 ### Minor Changes
