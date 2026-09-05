@@ -4,6 +4,7 @@ export const DEFAULT_LAB_PATH = "/foundations" as const;
 
 export function resolveLabPath(hash: string, validPaths: ReadonlySet<string>) {
   const path = hash.startsWith("#/") ? hash.slice(1) : DEFAULT_LAB_PATH;
+  if (path === "/explorations/toast" && validPaths.has("/components/toast")) return "/components/toast";
   return validPaths.has(path) ? path : DEFAULT_LAB_PATH;
 }
 

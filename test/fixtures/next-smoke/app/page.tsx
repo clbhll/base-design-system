@@ -12,6 +12,16 @@ import {
   ProgressBar,
   TextInput,
   TrashIcon,
+  Toast,
+  ToastProvider,
+  useToast,
+  type ToastAction,
+  type ToastProps,
+  type ToastProviderProps,
+  type ToastOptions,
+  type ToastController,
+  type ToastPlacement,
+  type ToastVariant,
   isBaseTheme,
   type BaseTheme,
   type ActionMenuAlign,
@@ -30,6 +40,15 @@ import {
   type ProgressBarProps,
   type TextInputProps,
 } from "@calebhill/base";
+
+const toastAction = { label: "Undo", onClick: () => undefined } satisfies ToastAction;
+const toastProps = { message: "Saved", action: toastAction } satisfies ToastProps;
+const toastOptions = { message: "Fixture notification", duration: null, variant: "success" satisfies ToastVariant } satisfies ToastOptions;
+function ToastFixture() {
+  const controller: ToastController = useToast();
+  return <><Toast {...toastProps} /><Button onClick={() => controller.notify(toastOptions)}>Notify</Button></>;
+}
+const toastProvider = { placement: "bottom-center" satisfies ToastPlacement, children: <ToastFixture /> } satisfies ToastProviderProps;
 
 const buttonProps = { type: "button" } satisfies ButtonProps;
 const actionMenuTone = "destructive" satisfies ActionMenuItemTone;
@@ -81,6 +100,7 @@ export default function Page() {
       <ActionMenu {...actionMenuProps} />
       <TextInput {...textInputProps} />
       <ProgressBar {...progressBarProps} />
+      <ToastProvider {...toastProvider} />
       <Dialog {...dialogProps}>
         <DialogHeading {...dialogHeadingProps} />
         <DialogFooter {...dialogFooterProps}>

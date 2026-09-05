@@ -891,7 +891,7 @@ describe("release workflow contract", () => {
 
     expect(state.mode).toBe("pre");
     expect(state.tag).toBe("alpha");
-    expect(pendingChangesets).toEqual([]);
+    expect(pendingChangesets).toEqual(["quick-toasts-appear.md"]);
     expect(archivedChangesets).toEqual(releaseChangesets);
     expect(changelog).toBe(`# @calebhill/base
 

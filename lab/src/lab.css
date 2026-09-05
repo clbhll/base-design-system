@@ -201,6 +201,48 @@ body {
   border-radius: var(--base-ref-radius-lg);
 }
 
+.lab-toast-stage {
+  display: grid;
+  min-width: 0;
+  min-height: 12rem;
+  place-items: center;
+}
+
+.lab-toast-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--base-ref-space-4);
+}
+
+.lab-toast-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--base-ref-space-2);
+}
+
+.lab-toast-select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: var(--base-ref-space-2) var(--base-ref-space-3);
+  font: inherit;
+  color: var(--base-color-text-primary);
+  background: var(--base-color-surface);
+  border: 1px solid var(--base-color-border);
+  border-radius: var(--base-ref-radius-md);
+}
+
+.lab-toast-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--base-ref-space-2);
+  min-height: 2.75rem;
+  width: fit-content;
+}
+
+.lab-toast-feedback {
+  min-height: 1.25rem;
+}
+
 .lab-component-grid,
 .lab-input-grid,
 .lab-icon-grid {

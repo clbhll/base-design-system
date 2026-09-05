@@ -1,0 +1,163 @@
+/* base-component: toast */
+
+.base-toast {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--base-ref-space-2);
+  width: fit-content;
+  max-width: 100%;
+  min-height: 3.5rem;
+  padding: var(--base-ref-space-2);
+  color: var(--base-color-text-primary);
+  background: var(--base-color-surface);
+  border: 1px solid var(--base-color-border);
+  border-radius: 1.5rem;
+  corner-shape: squircle;
+  box-shadow: 0 4px 16px -4px rgb(0 0 0 / 12%);
+}
+
+.base-toast[data-leading="false"] {
+  padding-inline-start: var(--base-ref-space-5);
+}
+.base-toast[data-action="false"] {
+  padding-inline-end: var(--base-ref-space-5);
+}
+.base-toast-leading {
+  display: grid;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+}
+.base-toast-leading img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--base-ref-radius-md);
+  corner-shape: squircle;
+}
+.base-toast-message {
+  min-width: 0;
+  padding-block: var(--base-ref-space-2);
+  overflow-wrap: anywhere;
+}
+
+/* Base Button owns its pill shape. Only the surrounding layout is adjusted. */
+.base-toast > .base-button {
+  flex: 0 0 auto;
+  margin-inline-start: var(--base-ref-space-1);
+  max-width: 50%;
+  height: auto;
+  min-height: 2.5rem;
+  padding-block: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.base-toast-viewport {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--base-ref-space-2);
+  width: max-content;
+  max-width: min(
+    28rem,
+    calc(
+      100% - 2rem - env(safe-area-inset-left, 0px) -
+        env(safe-area-inset-right, 0px)
+    )
+  );
+  max-height: calc(
+    100dvh - 2rem - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  overflow-y: auto;
+  padding: var(--base-ref-space-1);
+  margin: 0;
+  list-style: none;
+  outline: none;
+  pointer-events: none;
+}
+.base-toast-viewport[data-placement^="bottom"] {
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+.base-toast-viewport[data-placement^="top"] {
+  top: max(1rem, env(safe-area-inset-top, 0px));
+}
+.base-toast-viewport[data-placement$="center"] {
+  left: 50%;
+  translate: -50% 0;
+}
+.base-toast-viewport[data-placement$="left"] {
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  align-items: flex-start;
+}
+.base-toast-viewport[data-placement$="right"] {
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  align-items: flex-end;
+}
+.base-toast-viewport:focus-visible {
+  outline: 2px solid var(--base-color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--base-ref-radius-lg);
+}
+
+.base-toast-notification {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  list-style: none;
+  border-radius: 1.5rem;
+  corner-shape: squircle;
+  pointer-events: auto;
+  touch-action: pan-y;
+  user-select: none;
+  animation-duration: 150ms;
+  animation-timing-function: var(--base-toast-ease);
+  animation-fill-mode: both;
+}
+.base-toast-notification[data-state="open"] {
+  animation-name: base-toast-enter;
+}
+.base-toast-notification[data-state="closed"] {
+  pointer-events: none;
+  animation-name: base-toast-exit;
+}
+.base-toast-notification[data-swipe="move"] {
+  animation: none;
+  transform: translateX(var(--base-toast-swipe-x));
+}
+.base-toast-notification[data-swipe="cancel"] {
+  transform: translateX(0);
+  transition: transform 150ms var(--base-toast-ease);
+}
+@keyframes base-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes base-toast-exit {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes base-toast-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .base-toast-notification[data-state="open"] {
+    animation-name: base-toast-fade;
+  }
+  .base-toast-notification[data-swipe="cancel"] {
+    transition: none;
+  }
+}

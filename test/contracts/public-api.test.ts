@@ -13,6 +13,7 @@ const runtimeExports = [
   ...buttonRuntimeExports,
   ...dialogRuntimeExports,
   ...primitiveRuntimeExports,
+  "Toast", "ToastProvider", "useToast",
 ].sort();
 
 describe("public api", () => {

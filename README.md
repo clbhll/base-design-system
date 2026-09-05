@@ -106,6 +106,61 @@ export function PhotoActions() {
 
 The menu is uncontrolled by default and opens above the trigger, aligned to its trailing edge with an 8px gap. Use `open` with `onOpenChange` for controlled state, or adjust `side`, `align`, and `sideOffset` when the surrounding layout needs another placement. Disabled actions stay visible but cannot receive focus or run their callback.
 
+## Toast
+
+Wrap your application once in `ToastProvider`. Use `useToast` inside it to display
+notifications. Base owns placement, queuing, announcements, timers, and dismissal;
+your application owns the operation and its result.
+
+```tsx
+import { Button, ToastProvider, useToast } from "@calebhill/base";
+
+function SaveFeedback() {
+  const { notify } = useToast();
+  return (
+    <Button onClick={() => notify({ message: "Changes saved.", duration: 5000 })}>
+      Show feedback
+    </Button>
+  );
+}
+
+export function App() {
+  return <ToastProvider><SaveFeedback /></ToastProvider>;
+}
+```
+
+The default is bottom-center, a 150ms entrance with no delay, a 5000ms timeout,
+and up to three visible notifications. Use `duration: null` to persist until
+dismissed. Timers pause on hover, keyboard focus, and window blur. An optional
+`leading` node holds a decorative image or icon; an `action` has a text `label`
+and an `onClick` callback. The action always uses the subtle, pill-shaped Base
+Button. Clicking it invokes the callback and dismisses the notification; it does
+not await asynchronous work. A persistent toast without an action gets a Dismiss
+button in the same trailing slot.
+
+`notify` returns an id for `dismiss(id)`. `dismissAll()` immediately clears both
+visible and queued entries. Repeated open or queued notifications with the same
+variant and message reuse the existing id; supply `dedupeKey` to choose another
+identity. Queued timers start only when displayed. The queue uses insertion order,
+with newer visible notifications below older ones.
+
+`ToastProvider` accepts `duration`, `maxVisible`, and `placement` (top or bottom,
+combined with left, center, or right). Viewport spacing accounts for safe areas.
+Its portal defaults to `document.body`; set `theme` when the portal needs a theme
+different from the document, or `portalContainer` for another destination. The
+destination must remain mounted. For use inside a modal, place a scoped provider
+and its portal container inside the modal's accessible content.
+
+F8 focuses notifications; Tab reaches each toast and action; Escape dismisses
+within that area. Swipe right also dismisses. `variant: "error"` announces
+assertively; `"neutral"` (default) and `"success"` announce politely. These variants
+do not add decorative color. Reduced motion uses a fade. Localize `label`,
+`viewportLabel` (supports `{hotkey}`), and `dismissLabel` on the provider.
+
+`Toast` is also exported as visual anatomy with `message`, `leading`, and `action`
+props plus native div attributes and a forwarded ref. It does not announce or
+manage its own visibility; use the provider for notifications.
+
 ## Development
 
 Install dependencies and run the same fail-fast gate used by CI:

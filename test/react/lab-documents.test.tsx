@@ -58,6 +58,7 @@ const componentDocuments = [
     'import { Dialog, DialogFooter, DialogHeading } from "@calebhill/base";',
   ],
   ["/components/icons", "Icons", 'import { MoreIcon, TrashIcon } from "@calebhill/base";'],
+  ["/components/toast", "Toast", 'import { Toast, ToastProvider, useToast } from "@calebhill/base";'],
 ] as const;
 
 describe("public component documents", () => {
@@ -71,6 +72,7 @@ describe("public component documents", () => {
       "/components/progress-bar",
       "/components/dialog",
       "/components/icons",
+      "/components/toast",
     ]);
     expect(new Set(labDocuments.map(({ path }) => path)).size).toBe(labDocuments.length);
   });
@@ -163,7 +165,7 @@ describe("public component documents", () => {
     expect(packageArtifacts).not.toContain("--lab-status-beta");
   });
 
-  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog", "/components/action-menu"])(
+  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog", "/components/action-menu", "/components/toast"])(
     "has no representative automated accessibility violations at %s",
     async (path) => {
       const { container } = renderPath(path);

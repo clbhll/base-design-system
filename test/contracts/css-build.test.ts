@@ -8,6 +8,7 @@ const componentStyleSentinels = [
   "/* base-component: progress-bar */",
   "/* base-component: dialog */",
   "/* base-component: action-menu */",
+  "/* base-component: toast */",
 ] as const;
 
 describe("css build", () => {
@@ -23,6 +24,7 @@ describe("css build", () => {
         '@import "../../src/styles/components/progress-bar.css";',
         '@import "../../src/styles/components/dialog.css";',
         '@import "../../src/styles/components/action-menu.css";',
+        '@import "../../src/styles/components/toast.css";',
         "",
       ].join("\n"),
     );
