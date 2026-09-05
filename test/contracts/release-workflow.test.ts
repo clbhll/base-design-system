@@ -30,8 +30,8 @@ import {
   verifyRegistryPackage,
 } from "../../scripts/verify-registry-package.mjs";
 
-const version = "0.1.0-alpha.2";
-const otherVersion = "0.1.0-alpha.3";
+const version = "0.1.0-alpha.3";
+const otherVersion = "0.1.0-alpha.4";
 const packageJson = {
   name: "@calebhill/base",
   version,
@@ -880,6 +880,7 @@ describe("release workflow contract", () => {
       "calm-dialogs-arrive.md",
       "calm-menus-open.md",
       "calm-primitives-grow.md",
+      "quick-toasts-appear.md",
     ];
     const pendingChangesets = readdirSync(".changeset")
       .filter((file) => file.endsWith(".md") && file !== "README.md")
@@ -891,9 +892,15 @@ describe("release workflow contract", () => {
 
     expect(state.mode).toBe("pre");
     expect(state.tag).toBe("alpha");
-    expect(pendingChangesets).toEqual(["quick-toasts-appear.md"]);
+    expect(pendingChangesets).toEqual([]);
     expect(archivedChangesets).toEqual(releaseChangesets);
     expect(changelog).toBe(`# @calebhill/base
+
+## 0.1.0-alpha.3
+
+### Minor Changes
+
+- 13e8a17: Add Toast, ToastProvider, and useToast with bottom-center placement, configurable timed or persistent dismissal, bounded display queuing, duplicate suppression, keyboard access, and reduced-motion support. Toast actions use the subtle Base Button and preserve its pill shape.
 
 ## 0.1.0-alpha.2
 

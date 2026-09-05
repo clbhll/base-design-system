@@ -1,5 +1,11 @@
 # @calebhill/base
 
+## 0.1.0-alpha.3
+
+### Minor Changes
+
+- 13e8a17: Add Toast, ToastProvider, and useToast with bottom-center placement, configurable timed or persistent dismissal, bounded display queuing, duplicate suppression, keyboard access, and reduced-motion support. Toast actions use the subtle Base Button and preserve its pill shape.
+
 ## 0.1.0-alpha.2
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@calebhill/base",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Project-agnostic React design system foundations and components.",
   "license": "MIT",
   "repository": {
