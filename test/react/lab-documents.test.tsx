@@ -71,6 +71,7 @@ describe("public component documents", () => {
       "/components/progress-bar",
       "/components/dialog",
       "/components/icons",
+      "/explorations/toast",
     ]);
     expect(new Set(labDocuments.map(({ path }) => path)).size).toBe(labDocuments.length);
   });
@@ -163,7 +164,7 @@ describe("public component documents", () => {
     expect(packageArtifacts).not.toContain("--lab-status-beta");
   });
 
-  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog", "/components/action-menu"])(
+  it.each(["/foundations", "/components/button", "/components/text-input", "/components/dialog", "/components/action-menu", "/explorations/toast"])(
     "has no representative automated accessibility violations at %s",
     async (path) => {
       const { container } = renderPath(path);

@@ -201,6 +201,110 @@ body {
   border-radius: var(--base-ref-radius-lg);
 }
 
+.lab-toast-stage {
+  display: grid;
+  min-width: 0;
+  min-height: 12rem;
+  place-items: center;
+}
+
+.lab-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--base-ref-space-2);
+  width: fit-content;
+  max-width: 100%;
+  min-height: 3.5rem;
+  padding: var(--base-ref-space-2);
+  color: var(--base-color-text-primary);
+  background: var(--base-color-surface);
+  border: 1px solid var(--base-color-border);
+  border-radius: 1.5rem;
+  corner-shape: squircle;
+  box-shadow: 0 4px 16px -4px rgb(0 0 0 / 12%);
+}
+
+.lab-toast[data-leading="false"] {
+  padding-inline-start: var(--base-ref-space-5);
+}
+
+.lab-toast[data-action="false"] {
+  padding-inline-end: var(--base-ref-space-5);
+}
+
+.lab-toast-leading {
+  display: grid;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+}
+
+.lab-toast-leading img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--base-ref-radius-md);
+  corner-shape: squircle;
+}
+
+.lab-toast-message {
+  min-width: 0;
+  padding-block: var(--base-ref-space-2);
+  overflow-wrap: anywhere;
+}
+
+.lab-toast > .base-button {
+  flex: 0 0 auto;
+  margin-inline-start: var(--base-ref-space-1);
+  max-width: 50%;
+  height: auto;
+  min-height: 2.5rem;
+  padding-block: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.lab-toast-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--base-ref-space-4);
+}
+
+.lab-toast-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--base-ref-space-2);
+}
+
+.lab-toast-select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: var(--base-ref-space-2) var(--base-ref-space-3);
+  font: inherit;
+  color: var(--base-color-text-primary);
+  background: var(--base-color-surface);
+  border: 1px solid var(--base-color-border);
+  border-radius: var(--base-ref-radius-md);
+}
+
+.lab-toast-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--base-ref-space-2);
+  min-height: 2.75rem;
+  width: fit-content;
+}
+
+.lab-toast-feedback {
+  min-height: 1.25rem;
+}
+
+.lab-toast-note {
+  color: var(--base-color-text-secondary);
+}
+
 .lab-component-grid,
 .lab-input-grid,
 .lab-icon-grid {
