@@ -82,6 +82,9 @@ function writeExtractedPackage(root: string) {
       "export const ProgressBar = null;",
       "export const TextInput = null;",
       "export const TrashIcon = null;",
+      "export const Toast = null;",
+      "export const ToastProvider = null;",
+      "export const useToast = () => ({});",
       "export const isBaseTheme = () => true;",
     ].join("\n"),
   );
@@ -115,6 +118,16 @@ function writeExtractedPackage(root: string) {
       "export type TextInputProps = {};",
       "export type ProgressBarProps = {};",
       "export declare const TrashIcon: unknown;",
+      "export declare const Toast: unknown;",
+      "export declare const ToastProvider: unknown;",
+      "export declare function useToast(): ToastController;",
+      "export type ToastAction = {};",
+      "export type ToastProps = {};",
+      "export type ToastProviderProps = {};",
+      "export type ToastOptions = {};",
+      "export type ToastController = {};",
+      "export type ToastPlacement = 'bottom-center';",
+      "export type ToastVariant = 'neutral';",
       "export declare function isBaseTheme(value: string): value is BaseTheme;",
     ].join("\n"),
   );
@@ -127,6 +140,7 @@ function writeExtractedPackage(root: string) {
       "/* base-component: progress-bar */ .base-progress-bar {}",
       "/* base-component: dialog */ .base-dialog {}",
       "/* base-component: action-menu */ .base-action-menu {}",
+      "/* base-component: toast */ .base-toast {}",
     ].join("\n"),
   );
 }

@@ -10,7 +10,7 @@ import { ProgressBarDocument } from "./documents/progress-bar";
 import { TextInputDocument } from "./documents/text-input";
 import { ToastDocument } from "./documents/toast";
 
-export type LabDocumentGroup = "foundations" | "components" | "explorations";
+export type LabDocumentGroup = "foundations" | "components";
 
 export interface LabDocumentDefinition {
   path: string;
@@ -69,9 +69,9 @@ export const labDocuments = [
     Document: IconsDocument,
   },
   {
-    path: "/explorations/toast",
+    path: "/components/toast",
     label: "Toast",
-    group: "explorations",
+    group: "components",
     Document: ToastDocument,
   },
 ] as const satisfies ReadonlyArray<LabDocumentDefinition>;

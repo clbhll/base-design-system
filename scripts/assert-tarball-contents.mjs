@@ -27,6 +27,9 @@ export const expectedRuntimeExports = [
   "ProgressBar",
   "TextInput",
   "TrashIcon",
+  "Toast",
+  "ToastProvider",
+  "useToast",
   "isBaseTheme",
 ].sort();
 
@@ -58,6 +61,16 @@ export const expectedDeclarationNames = [
   "TextInputProps",
   "ProgressBarProps",
   "TrashIcon",
+  "Toast",
+  "ToastAction",
+  "ToastProps",
+  "ToastProvider",
+  "ToastProviderProps",
+  "ToastOptions",
+  "ToastController",
+  "ToastPlacement",
+  "ToastVariant",
+  "useToast",
   "isBaseTheme",
 ].sort();
 
@@ -111,6 +124,8 @@ const approvedTsupSourceLabels = new Set([
   "src/components/progress-bar.tsx",
   "src/components/dialog.tsx",
   "src/components/action-menu.tsx",
+  "src/components/toast.tsx",
+  "src/components/toast-provider.tsx",
   "src/components/icons/more-icon.tsx",
   "src/components/icons/trash-icon.tsx",
 ]);
@@ -339,6 +354,7 @@ function assertCssContract(tokens, styles) {
     ["text-input", ".base-text-input"],
     ["progress-bar", ".base-progress-bar"],
     ["dialog", ".base-dialog"],
+    ["toast", ".base-toast"],
   ].filter(([name, className]) =>
     !styles.includes(`base-component: ${name}`) || !styles.includes(className),
   );

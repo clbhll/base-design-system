@@ -31,6 +31,9 @@ const expectedFixtureRuntimeImports = [
   "ProgressBar",
   "TextInput",
   "TrashIcon",
+  "Toast",
+  "ToastProvider",
+  "useToast",
   "isBaseTheme",
 ].sort();
 const expectedFixtureTypeImports = [
@@ -50,6 +53,13 @@ const expectedFixtureTypeImports = [
   "DialogSize",
   "ProgressBarProps",
   "TextInputProps",
+  "ToastAction",
+  "ToastProps",
+  "ToastProviderProps",
+  "ToastOptions",
+  "ToastController",
+  "ToastPlacement",
+  "ToastVariant",
 ].sort();
 const fixtureContracts = {
   "next-smoke": {

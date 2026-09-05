@@ -8,7 +8,6 @@ import { labHref, useLabPath } from "./routing";
 const groupLabels = {
   foundations: "Foundations",
   components: "Components",
-  explorations: "Explorations",
 } as const;
 
 export function App() {

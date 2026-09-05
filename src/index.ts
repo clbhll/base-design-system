@@ -7,5 +7,7 @@ export * from "./components/text-input";
 export * from "./components/progress-bar";
 export * from "./components/dialog";
 export * from "./components/action-menu";
+export * from "./components/toast";
+export * from "./components/toast-provider";
 export * from "./components/icons/more-icon";
 export * from "./components/icons/trash-icon";
