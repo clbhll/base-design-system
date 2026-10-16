@@ -1,6 +1,6 @@
 # Base component canvas design
 
-Status: draft for review. Not yet approved in Linear.
+Status: approved in CLB-796. Delivery phases are CLB-797 through CLB-800.
 
 ## Context
 
@@ -22,8 +22,8 @@ live dimensions and token annotations for any selected element.
 This supersedes the CLB-703 information architecture (sidebar plus one document
 per component). It keeps CLB-703's principles: executable examples rendered
 through public package exports, linkable locations, static-host-safe URLs, and
-keyboard accessibility. Per `DESIGN.md` section 3, the replacement must be
-recorded as an approved Linear decision before implementation.
+keyboard accessibility. CLB-796 records the replacement as the approved Linear
+decision required by `DESIGN.md` section 3.
 
 It is lab-only. It does not change the published `@calebhill/base` API, CSS,
 tokens, or package artifact, so it needs no changeset and has no Figma impact.
@@ -317,15 +317,17 @@ Each phase is a separate PR that leaves the lab shippable.
 4. **Static overlays.** Frame route and iframe static specimens for Dialog and
    ActionMenu, plus the static Toast specimen.
 
+## Resolved decisions
+
+Recorded in CLB-796:
+
+- Black always means the dark theme.
+- Information mode ships in the production `lab:build`, off by default.
+- The tab grouping above is accepted as proposed.
+- The lab chrome (top bar and inspector) stays in a fixed theme regardless of
+  the selected surface.
+
 ## Open questions
 
-- Does Black always mean the dark theme, or should the light theme on a black
-  canvas also be reviewable?
-- Should Information mode ship in the production `lab:build` (the public site)
-  or be dev-only like the Agentation tool? This spec assumes it ships, off by
-  default.
-- Is the proposed tab grouping right? Inputs and Overlays each hold one
-  component today.
-- Should the inspector's chrome theme follow the surface or stay fixed?
 - Does the Agentation dev tool still need to be present on the canvas, and does
-  its UI conflict with the Information-mode capture layer?
+  its UI conflict with the Information-mode capture layer? Revisit in phase 2.
