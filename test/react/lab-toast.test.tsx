@@ -1,14 +1,17 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
-import { ToastDocument } from "../../lab/src/documents/toast";
+import { App } from "../../lab/src/app";
+
+vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
 
 afterEach(cleanup);
 
 it("lets the visual pass edit the message and independently remove both optional parts", async () => {
   const user = userEvent.setup();
-  render(<ToastDocument />);
+  window.history.replaceState(null, "", "#/feedback/toast");
+  render(<App />);
   const preview = within(screen.getByRole("group", { name: "Toast preview" }));
 
   expect(preview.getByText("Your changes have been saved.")).toBeVisible();

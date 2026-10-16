@@ -1,10 +1,13 @@
-import type { ReactNode } from "react";
+import { InspectorSection } from "./inspector-section";
 
-export function AccessibilityNotes({ children }: { children: ReactNode }) {
+export function AccessibilityNotes({ notes }: { notes: ReadonlyArray<string> }) {
   return (
-    <section className="lab-document-section">
-      <h2 className="base-type-heading-md">Accessibility</h2>
-      <ul className="lab-accessibility-list base-type-body">{children}</ul>
-    </section>
+    <InspectorSection title="Accessibility">
+      <ul className="lab-accessibility-list base-type-body-sm">
+        {notes.map((note) => (
+          <li key={note}>{note}</li>
+        ))}
+      </ul>
+    </InspectorSection>
   );
 }

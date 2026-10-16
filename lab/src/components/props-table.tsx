@@ -1,3 +1,5 @@
+import { InspectorSection } from "./inspector-section";
+
 export interface PropDefinition {
   name: string;
   type: string;
@@ -7,17 +9,14 @@ export interface PropDefinition {
 
 export function PropsTable({ props }: { props: ReadonlyArray<PropDefinition> }) {
   return (
-    <section className="lab-document-section">
-      <h2 className="base-type-heading-md">Props</h2>
+    <InspectorSection title="Props">
       <div className="lab-props-table-wrap">
         <table className="lab-props-table base-type-body-sm">
           <caption>Public props</caption>
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Type</th>
-              <th scope="col">Default</th>
-              <th scope="col">Description</th>
+              <th scope="col">Prop</th>
+              <th scope="col">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -27,21 +26,19 @@ export function PropsTable({ props }: { props: ReadonlyArray<PropDefinition> }) 
                   <code className="base-type-mono">{property.name}</code>
                 </th>
                 <td>
-                  <code className="base-type-mono">{property.type}</code>
-                </td>
-                <td>
+                  <code className="lab-props-type base-type-mono">{property.type}</code>
                   {property.defaultValue ? (
-                    <code className="base-type-mono">{property.defaultValue}</code>
-                  ) : (
-                    "—"
-                  )}
+                    <span className="lab-props-default">
+                      Default <code className="base-type-mono">{property.defaultValue}</code>
+                    </span>
+                  ) : null}
+                  <span className="lab-props-description">{property.description}</span>
                 </td>
-                <td>{property.description}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </section>
+    </InspectorSection>
   );
 }
