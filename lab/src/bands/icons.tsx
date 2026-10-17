@@ -48,3 +48,12 @@ export function IconSpecimens() {
     </div>
   );
 }
+
+export function IconPreview() {
+  return (
+    <div className="lab-specimen-row lab-preview-icons">
+      <MoreIcon />
+      <TrashIcon />
+    </div>
+  );
+}

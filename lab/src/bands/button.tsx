@@ -93,3 +93,15 @@ export function ButtonDisabledSpecimens() {
     </div>
   );
 }
+
+export function ButtonPreview() {
+  return (
+    <div className="lab-specimen-row">
+      <Button variant="primary">Primary</Button>
+      <Button variant="secondary">Secondary</Button>
+      <Button aria-label="More actions" size="icon" variant="subtle">
+        <MoreIcon />
+      </Button>
+    </div>
+  );
+}

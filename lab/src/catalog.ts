@@ -1,131 +1,163 @@
-import { actionMenuDocs, ActionMenuSpecimens } from "./bands/action-menu";
+import { actionMenuDocs, ActionMenuPreview, ActionMenuSpecimens } from "./bands/action-menu";
 import {
   buttonDocs,
   ButtonDefaultSpecimens,
   ButtonDisabledSpecimens,
   ButtonIconSpecimens,
+  ButtonPreview,
 } from "./bands/button";
-import { buttonLinkDocs, ButtonLinkSpecimens } from "./bands/button-link";
-import { dialogDocs, DialogSpecimens } from "./bands/dialog";
+import { buttonLinkDocs, ButtonLinkPreview, ButtonLinkSpecimens } from "./bands/button-link";
+import { dialogDocs, DialogPreview, DialogSpecimens } from "./bands/dialog";
 import {
+  ColorPreview,
   ColorSpecimens,
   foundationDocs,
+  InteractionPreview,
   InteractionSpecimens,
+  LinkPreview,
   LinkSpecimens,
+  OverridePreview,
   OverrideSpecimens,
+  TypographyPreview,
   TypographySpecimens,
 } from "./bands/foundations";
-import { iconDocs, IconSpecimens } from "./bands/icons";
-import { progressBarDocs, ProgressBarSpecimens } from "./bands/progress-bar";
-import { textInputDocs, TextInputSpecimens } from "./bands/text-input";
-import { toastDocs, ToastSpecimens } from "./bands/toast";
-import type { LabCategory, LabComponentDocs } from "./catalog-types";
-
-export const labComponentDocs: Readonly<Record<string, LabComponentDocs>> = {
-  ...foundationDocs,
-  icons: iconDocs,
-  button: buttonDocs,
-  "button-link": buttonLinkDocs,
-  "action-menu": actionMenuDocs,
-  "text-input": textInputDocs,
-  "progress-bar": progressBarDocs,
-  toast: toastDocs,
-  dialog: dialogDocs,
-};
+import { iconDocs, IconPreview, IconSpecimens } from "./bands/icons";
+import { progressBarDocs, ProgressBarPreview, ProgressBarSpecimens } from "./bands/progress-bar";
+import { textInputDocs, TextInputPreview, TextInputSpecimens } from "./bands/text-input";
+import { toastDocs, ToastPreview, ToastSpecimens } from "./bands/toast";
+import type { LabCategory } from "./catalog-types";
 
 export const labCategories: ReadonlyArray<LabCategory> = [
   {
     id: "foundations",
     label: "Foundations",
-    bands: [
-      { id: "color", label: "Color", componentId: "color", Specimens: ColorSpecimens },
+    components: [
+      {
+        id: "color",
+        caption: "4 semantic surfaces · light and dark",
+        docs: foundationDocs.color,
+        Preview: ColorPreview,
+        bands: [{ id: "colors", label: "Semantic colors", Specimens: ColorSpecimens }],
+      },
       {
         id: "typography",
-        label: "Typography",
-        componentId: "typography",
-        Specimens: TypographySpecimens,
+        caption: "11 type roles · .base-type-*",
+        docs: foundationDocs.typography,
+        Preview: TypographyPreview,
+        bands: [{ id: "roles", label: "Type roles", Specimens: TypographySpecimens }],
       },
-      { id: "links", label: "Links", componentId: "links", Specimens: LinkSpecimens },
+      {
+        id: "links",
+        caption: "standard and muted · 7 surfaces",
+        docs: foundationDocs.links,
+        Preview: LinkPreview,
+        bands: [{ id: "surfaces", label: "Link surfaces", Specimens: LinkSpecimens }],
+      },
       {
         id: "interaction",
-        label: "Focus and press",
-        componentId: "interaction",
-        Specimens: InteractionSpecimens,
+        caption: "focus ring · press feedback · mono",
+        docs: foundationDocs.interaction,
+        Preview: InteractionPreview,
+        bands: [
+          { id: "interaction", label: "Focus, press, and code", Specimens: InteractionSpecimens },
+        ],
       },
       {
         id: "override",
-        label: "Consumer override",
-        componentId: "override",
-        Specimens: OverrideSpecimens,
+        caption: "scoped token cascade",
+        docs: foundationDocs.override,
+        Preview: OverridePreview,
+        bands: [{ id: "scoped", label: "Scoped override", Specimens: OverrideSpecimens }],
       },
-      { id: "icons", label: "Icons", componentId: "icons", Specimens: IconSpecimens },
+      {
+        id: "icons",
+        caption: "2 icons · currentColor · decorative",
+        docs: iconDocs,
+        Preview: IconPreview,
+        bands: [{ id: "current", label: "Current icons", Specimens: IconSpecimens }],
+      },
     ],
   },
   {
     id: "actions",
     label: "Actions",
-    bands: [
+    components: [
       {
         id: "button",
-        label: "Button · default size",
-        componentId: "button",
-        Specimens: ButtonDefaultSpecimens,
-      },
-      {
-        id: "button-icon",
-        label: "Button · icon size",
-        componentId: "button",
-        Specimens: ButtonIconSpecimens,
-      },
-      {
-        id: "button-disabled",
-        label: "Button · disabled",
-        componentId: "button",
-        Specimens: ButtonDisabledSpecimens,
+        caption: "6 variants · 2 sizes · disabled",
+        docs: buttonDocs,
+        Preview: ButtonPreview,
+        bands: [
+          { id: "default", label: "Default size", Specimens: ButtonDefaultSpecimens },
+          { id: "icon", label: "Icon size", Specimens: ButtonIconSpecimens },
+          { id: "disabled", label: "Disabled", Specimens: ButtonDisabledSpecimens },
+        ],
       },
       {
         id: "button-link",
-        label: "Button Link",
-        componentId: "button-link",
-        Specimens: ButtonLinkSpecimens,
+        caption: "6 variants · 2 sizes · native anchor",
+        docs: buttonLinkDocs,
+        Preview: ButtonLinkPreview,
+        bands: [{ id: "variants", label: "Variants and sizes", Specimens: ButtonLinkSpecimens }],
       },
       {
         id: "action-menu",
-        label: "ActionMenu",
-        componentId: "action-menu",
-        Specimens: ActionMenuSpecimens,
+        caption: "2 tones · disabled items · 4 sides",
+        docs: actionMenuDocs,
+        Preview: ActionMenuPreview,
+        bands: [
+          { id: "behavior", label: "States, behavior, and parity", Specimens: ActionMenuSpecimens },
+        ],
       },
     ],
   },
   {
     id: "inputs",
     label: "Inputs",
-    bands: [
+    components: [
       {
         id: "text-input",
-        label: "Text Input",
-        componentId: "text-input",
-        Specimens: TextInputSpecimens,
+        caption: "4 states · error association",
+        docs: textInputDocs,
+        Preview: TextInputPreview,
+        bands: [{ id: "states", label: "States", Specimens: TextInputSpecimens }],
       },
     ],
   },
   {
     id: "feedback",
     label: "Feedback",
-    bands: [
+    components: [
       {
         id: "progress-bar",
-        label: "Progress Bar",
-        componentId: "progress-bar",
-        Specimens: ProgressBarSpecimens,
+        caption: "determinate · clamps 0–100",
+        docs: progressBarDocs,
+        Preview: ProgressBarPreview,
+        bands: [{ id: "states", label: "Progress states", Specimens: ProgressBarSpecimens }],
       },
-      { id: "toast", label: "Toast", componentId: "toast", Specimens: ToastSpecimens },
+      {
+        id: "toast",
+        caption: "message · leading media · action",
+        docs: toastDocs,
+        Preview: ToastPreview,
+        bands: [
+          { id: "anatomy", label: "Anatomy and live notifications", Specimens: ToastSpecimens },
+        ],
+      },
     ],
   },
   {
     id: "overlays",
     label: "Overlays",
-    bands: [{ id: "dialog", label: "Dialog", componentId: "dialog", Specimens: DialogSpecimens }],
+    components: [
+      {
+        id: "dialog",
+        caption: "2 sizes · contained focus · presence",
+        docs: dialogDocs,
+        Preview: DialogPreview,
+        bands: [{ id: "behavior", label: "Sizes and behavior", Specimens: DialogSpecimens }],
+      },
+    ],
   },
 ];
 

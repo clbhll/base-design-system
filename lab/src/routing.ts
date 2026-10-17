@@ -4,15 +4,15 @@ export const DEFAULT_LAB_CATEGORY = "foundations" as const;
 
 export interface LabRoute {
   category: string;
-  band?: string;
+  component?: string;
 }
 
 interface RoutableCategory {
   id: string;
-  bands: ReadonlyArray<{ id: string }>;
+  components: ReadonlyArray<{ id: string }>;
 }
 
-// CLB-703 documentation URLs named one component per page; they now resolve to that component's band.
+// CLB-703 documentation URLs named one component per page; they now open that component.
 const legacyPrefixes = new Set(["components", "explorations"]);
 
 export function resolveLabRoute(
@@ -26,24 +26,24 @@ export function resolveLabRoute(
   if (rest.length > 0) return fallback;
 
   if (legacyPrefixes.has(first) && second) {
-    const owner = categories.find(({ bands }) => bands.some(({ id }) => id === second));
-    return owner ? { category: owner.id, band: second } : fallback;
+    const owner = categories.find(({ components }) => components.some(({ id }) => id === second));
+    return owner ? { category: owner.id, component: second } : fallback;
   }
 
   const category = categories.find(({ id }) => id === first);
   if (!category) return fallback;
 
-  return second && category.bands.some(({ id }) => id === second)
-    ? { category: category.id, band: second }
+  return second && category.components.some(({ id }) => id === second)
+    ? { category: category.id, component: second }
     : { category: category.id };
 }
 
-export function labHref({ band, category }: LabRoute) {
-  return band ? `#/${category}/${band}` : `#/${category}`;
+export function labHref({ category, component }: LabRoute) {
+  return component ? `#/${category}/${component}` : `#/${category}`;
 }
 
 function isSameRoute(first: LabRoute, second: LabRoute) {
-  return first.category === second.category && first.band === second.band;
+  return first.category === second.category && first.component === second.component;
 }
 
 export function useLabRoute(categories: ReadonlyArray<RoutableCategory>) {
@@ -58,10 +58,15 @@ export function useLabRoute(categories: ReadonlyArray<RoutableCategory>) {
       }
       setRoute((current) => (isSameRoute(current, next) ? current : next));
     };
+    // History traversal can fire both events; unchanged routes are ignored above.
     window.addEventListener("hashchange", updateRoute);
+    window.addEventListener("popstate", updateRoute);
     updateRoute();
 
-    return () => window.removeEventListener("hashchange", updateRoute);
+    return () => {
+      window.removeEventListener("hashchange", updateRoute);
+      window.removeEventListener("popstate", updateRoute);
+    };
   }, [categories]);
 
   const navigate = useCallback((next: LabRoute, { replace = false } = {}) => {

@@ -123,3 +123,7 @@ export function ActionMenuSpecimens() {
     </div>
   );
 }
+
+export function ActionMenuPreview() {
+  return <ActionMenu icon={<MoreIcon />} items={parityItems} label="Preview options" />;
+}

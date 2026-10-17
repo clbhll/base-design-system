@@ -155,3 +155,59 @@ export function OverrideSpecimens() {
     </div>
   );
 }
+
+export function ColorPreview() {
+  return (
+    <div className="lab-specimen-row">
+      {colorSwatches.map(([, token]) => (
+        <span
+          className="lab-preview-swatch"
+          key={token}
+          style={{ background: `var(--base-color-${token})` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function TypographyPreview() {
+  return (
+    <div className="lab-preview-type">
+      <p className="base-type-display">Aa</p>
+      <p className="base-type-body-sm">Display to mono, 11 roles</p>
+    </div>
+  );
+}
+
+export function LinkPreview() {
+  return (
+    <span className="base-type-body">
+      <a className="base-link" href="#/foundations/links">
+        Standard link
+      </a>{" "}
+      <a className="base-link-muted" href="#/foundations/links">
+        Muted link
+      </a>
+    </span>
+  );
+}
+
+export function InteractionPreview() {
+  return (
+    <button className="lab-pressable base-focus-ring base-pressable base-type-action" type="button">
+      Press me
+    </button>
+  );
+}
+
+export function OverridePreview() {
+  return (
+    <button
+      className="lab-pressable base-pressable base-type-action"
+      style={{ "--base-color-accent": "#0082f6" } as CSSProperties}
+      type="button"
+    >
+      Consumer accent
+    </button>
+  );
+}

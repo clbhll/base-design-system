@@ -54,3 +54,11 @@ export function TextInputSpecimens() {
     </div>
   );
 }
+
+export function TextInputPreview() {
+  return (
+    <div className="lab-preview-field">
+      <TextInput aria-label="Preview input" defaultValue="A filled value" />
+    </div>
+  );
+}

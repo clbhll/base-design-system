@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import postcss from "postcss";
 import { axe } from "vitest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,22 +19,13 @@ afterEach(cleanup);
 
 describe("foundation lab", () => {
   it("pairs accent swatches with the on-accent foreground", async () => {
-    window.history.replaceState(null, "", "#/foundations");
+    window.history.replaceState(null, "", "#/foundations/color");
     const { container } = render(<App />);
+    const details = within(screen.getByRole("dialog", { name: "Color" }));
 
-    for (const label of screen.getAllByText("Accent")) {
+    for (const label of details.getAllByText("Accent")) {
       expect(label.closest(".lab-swatch")).toHaveAttribute("data-semantic-color", "accent");
     }
-    for (const link of [
-      ...screen.getAllByRole("link", { name: "Standard link" }),
-      ...screen.getAllByRole("link", { name: "Muted link" }),
-    ]) {
-      expect(link).toHaveAttribute("href", "#/foundations/links");
-    }
-    expect(screen.getByRole("link", { name: "consumer accent" })).toHaveAttribute(
-      "href",
-      "#/foundations/override",
-    );
 
     const declarations = new Map<string, string>();
     labStyles.walkRules('.lab-swatch[data-semantic-color="accent"]', (rule) => {
@@ -47,5 +38,26 @@ describe("foundation lab", () => {
     expect(
       (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
     ).toHaveLength(0);
+  });
+
+  it("points example links at the component that shows them", () => {
+    window.history.replaceState(null, "", "#/foundations/links");
+    let view = render(<App />);
+    const links = within(screen.getByRole("dialog", { name: "Links" }));
+    for (const link of [
+      ...links.getAllByRole("link", { name: "Standard link" }),
+      ...links.getAllByRole("link", { name: "Muted link" }),
+    ]) {
+      expect(link).toHaveAttribute("href", "#/foundations/links");
+    }
+    view.unmount();
+
+    window.history.replaceState(null, "", "#/foundations/override");
+    view = render(<App />);
+    expect(
+      within(screen.getByRole("dialog", { name: "Consumer override" })).getByRole("link", {
+        name: "consumer accent",
+      }),
+    ).toHaveAttribute("href", "#/foundations/override");
   });
 });

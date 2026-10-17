@@ -1,12 +1,12 @@
 import { globSync, readFileSync } from "node:fs";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import postcss, { type Rule } from "postcss";
 import { axe } from "vitest-axe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../lab/src/app";
-import { labCategories, labComponentDocs } from "../../lab/src/catalog";
+import { labCategories } from "../../lab/src/catalog";
 import { DEFAULT_LAB_CATEGORY } from "../../lab/src/routing";
 
 vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
@@ -51,12 +51,12 @@ function renderPath(path: string) {
   return render(<App />);
 }
 
-function inspector() {
-  return within(screen.getByRole("complementary", { name: "Inspector" }));
+function overlay(name: string) {
+  return within(screen.getByRole("dialog", { name }));
 }
 
-const allBands = labCategories.flatMap((category) =>
-  category.bands.map((band) => ({ category: category.id, ...band })),
+const allComponents = labCategories.flatMap((category) =>
+  category.components.map((component) => ({ category: category.id, ...component })),
 );
 
 const publicComponentExports = [
@@ -76,7 +76,7 @@ const publicComponentExports = [
 ];
 
 describe("component canvas registry", () => {
-  it("keeps categories and band URLs unique", () => {
+  it("keeps categories and component URLs unique", () => {
     expect(labCategories.map(({ id }) => id)).toEqual([
       "foundations",
       "actions",
@@ -85,15 +85,15 @@ describe("component canvas registry", () => {
       "overlays",
     ]);
     expect(labCategories[0].id).toBe(DEFAULT_LAB_CATEGORY);
-    expect(new Set(allBands.map(({ id }) => id)).size).toBe(allBands.length);
-    for (const category of labCategories) {
-      expect(category.bands.length).toBeGreaterThan(0);
-    }
+    expect(new Set(allComponents.map(({ id }) => id)).size).toBe(allComponents.length);
   });
 
-  it("documents every band", () => {
-    for (const band of allBands) {
-      expect(labComponentDocs[band.componentId], band.id).toBeDefined();
+  it("gives every component a caption, docs, and at least one band", () => {
+    for (const component of allComponents) {
+      expect(component.caption, component.id).not.toBe("");
+      expect(component.docs.title, component.id).not.toBe("");
+      expect(component.docs.summary, component.id).not.toBe("");
+      expect(component.bands.length, component.id).toBeGreaterThan(0);
     }
   });
 
@@ -108,84 +108,96 @@ describe("component canvas registry", () => {
   });
 });
 
-describe("component canvas", () => {
-  it("renders each category as labelled bands", () => {
+describe("component grid", () => {
+  it("shows a captioned card with a hidden live preview for each component", () => {
     for (const category of labCategories) {
       const view = renderPath(`/${category.id}`);
       const panel = within(screen.getByRole("tabpanel", { name: category.label }));
+      const cards = panel.getAllByRole("listitem");
+      expect(cards).toHaveLength(category.components.length);
 
-      for (const band of category.bands) {
-        expect(panel.getByRole("heading", { level: 2, name: band.label })).toBeVisible();
+      for (const component of category.components) {
+        const card = within(panel.getByRole("heading", { level: 2, name: component.docs.title }).closest("li")!);
+        expect(card.getByRole("button", { name: component.docs.title })).toHaveAttribute(
+          "aria-haspopup",
+          "dialog",
+        );
+        expect(card.getByText(component.caption)).toBeVisible();
       }
+      for (const preview of document.querySelectorAll(".lab-card-preview")) {
+        expect(preview).toHaveAttribute("aria-hidden", "true");
+        expect(preview).toHaveAttribute("inert");
+        expect(preview.childElementCount).toBeGreaterThan(0);
+      }
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
       view.unmount();
     }
   });
 
-  it("shows the selected component's documentation in the inspector", () => {
-    for (const band of allBands) {
-      const docs = labComponentDocs[band.componentId];
-      const view = renderPath(`/${band.category}/${band.id}`);
-
-      expect(inspector().getByRole("heading", { level: 2, name: docs.title })).toBeVisible();
-      expect(inspector().getByText(docs.summary)).toBeVisible();
-      if (docs.status) expect(inspector().getByText(/^(Beta|Stable|Unstable|Deprecated)$/)).toBeVisible();
-      if (docs.importStatement) expect(inspector().getByText(docs.importStatement)).toBeVisible();
-      if (docs.props) expect(inspector().getByRole("table", { name: "Public props" })).toBeVisible();
-      if (docs.accessibility) {
-        expect(inspector().getByRole("heading", { level: 3, name: "Accessibility" })).toBeVisible();
-      }
-
-      view.unmount();
-    }
-  });
-
-  it("selects a band from its label and records it in the location", async () => {
+  it("opens a card's details over the grid and returns to the card on close", async () => {
     const user = userEvent.setup();
     renderPath("/actions");
-
-    expect(inspector().getByRole("heading", { level: 2, name: "Button" })).toBeVisible();
-
     const historyLength = window.history.length;
-    const select = screen.getByRole("button", { name: "Button Link" });
-    await user.click(select);
 
-    expect(select).toHaveAttribute("aria-current", "true");
+    const open = screen.getByRole("button", { name: "Button Link" });
+    await user.click(open);
+
+    const details = overlay("Button Link");
     expect(window.location.hash).toBe("#/actions/button-link");
+    expect(window.history.length).toBe(historyLength + 1);
+    expect(details.getByText('import { ButtonLink, MoreIcon } from "@calebhill/base";')).toBeVisible();
+    expect(details.getByRole("heading", { level: 3, name: "Variants and sizes" })).toBeVisible();
+    expect(screen.getByRole("tabpanel", { name: "Actions" })).toBeVisible();
+
+    await user.click(details.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(window.location.hash).toBe("#/actions"));
+    expect(open).toHaveFocus();
+  });
+
+  it("closes a deep-linked overlay by replacing its history entry", async () => {
+    renderPath("/actions/button");
+    const historyLength = window.history.length;
+
+    act(() => {
+      screen.getByRole<HTMLDialogElement>("dialog", { name: "Button" }).close();
+    });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(window.location.hash).toBe("#/actions");
     expect(window.history.length).toBe(historyLength);
-    expect(inspector().getByRole("heading", { level: 2, name: "Button Link" })).toBeVisible();
-    expect(inspector().getByText('import { ButtonLink, MoreIcon } from "@calebhill/base";')).toBeVisible();
+    expect(screen.getByRole("button", { name: "Button" })).toHaveFocus();
   });
 
-  it("keeps foundation example links on their own band", async () => {
-    const user = userEvent.setup();
-    renderPath("/foundations/links");
+  it("shows each component's documentation in its overlay", () => {
+    for (const component of allComponents) {
+      const view = renderPath(`/${component.category}/${component.id}`);
+      const details = overlay(component.docs.title);
+      const { docs } = component;
 
-    await user.click(screen.getAllByRole("link", { name: "Standard link" })[0]);
-    expect(window.location.hash).toBe("#/foundations/links");
-    expect(inspector().getByRole("heading", { level: 2, name: "Links" })).toBeVisible();
+      expect(details.getByRole("heading", { level: 2, name: docs.title })).toBeVisible();
+      expect(details.getByText(docs.summary)).toBeVisible();
+      if (docs.status) expect(details.getByText(/^(Beta|Stable|Unstable|Deprecated)$/)).toBeVisible();
+      if (docs.importStatement) expect(details.getByText(docs.importStatement)).toBeVisible();
+      if (docs.props) expect(details.getByRole("table", { name: "Public props" })).toBeVisible();
+      if (docs.accessibility) {
+        expect(details.getByRole("heading", { level: 3, name: "Accessibility" })).toBeVisible();
+      }
+      for (const band of component.bands) {
+        expect(details.getByRole("heading", { level: 3, name: band.label })).toBeVisible();
+      }
 
-    await user.click(screen.getByRole("link", { name: "consumer accent" }));
-    expect(window.location.hash).toBe("#/foundations/override");
+      view.unmount();
+    }
   });
 
-  it("keeps live notifications when switching categories", async () => {
-    const user = userEvent.setup();
-    renderPath("/feedback/toast");
-
-    await user.click(screen.getByRole("button", { name: "Show toast" }));
-    const notifications = await screen.findByRole("region", { name: /Notifications/ });
-    const notification = await within(notifications).findByText("Your changes have been saved.");
-    await user.click(screen.getByRole("tab", { name: "Overlays" }));
-
-    expect(notification).toBeInTheDocument();
-  });
-
-  it("switches the canvas surface while the lab chrome keeps its theme", async () => {
+  it("applies the surface to the grid and the overlay while the chrome keeps its theme", async () => {
     const user = userEvent.setup();
     renderPath("/actions");
 
-    const canvas = screen.getByTestId("lab-canvas-surface");
+    const grid = screen.getByTestId("lab-canvas-surface");
     const surfaces = screen.getByRole("group", { name: "Canvas surface" });
     expect(within(surfaces).getAllByRole("button").map((button) => button.textContent)).toEqual([
       "Grey",
@@ -196,23 +208,22 @@ describe("component canvas", () => {
       "aria-pressed",
       "true",
     );
-    expect(canvas).toHaveAttribute("data-base-theme", "light");
-    expect(canvas).toHaveAttribute("data-lab-surface", "grey");
+    expect(grid).toHaveAttribute("data-base-theme", "light");
+    expect(grid).toHaveAttribute("data-lab-surface", "grey");
 
     await user.click(within(surfaces).getByRole("button", { name: "Black" }));
-    expect(canvas).toHaveAttribute("data-base-theme", "dark");
-    expect(canvas).toHaveAttribute("data-lab-surface", "black");
+    expect(grid).toHaveAttribute("data-base-theme", "dark");
+    expect(grid).toHaveAttribute("data-lab-surface", "black");
     expect(screen.getByRole("banner")).not.toHaveAttribute("data-base-theme");
+
+    await user.click(screen.getByRole("button", { name: "Button" }));
+    const specimens = screen.getByTestId("lab-overlay-surface");
+    expect(specimens).toHaveAttribute("data-base-theme", "dark");
+    expect(specimens).toHaveAttribute("data-lab-surface", "black");
+    expect(screen.getByRole("dialog", { name: "Button" })).not.toHaveAttribute("data-base-theme");
     expect(screen.getByRole("complementary", { name: "Inspector" })).not.toHaveAttribute(
       "data-base-theme",
     );
-
-    await user.click(screen.getByRole("tab", { name: "Inputs" }));
-    expect(screen.getByTestId("lab-canvas-surface")).toHaveAttribute("data-lab-surface", "black");
-
-    await user.click(within(surfaces).getByRole("button", { name: "White" }));
-    expect(screen.getByTestId("lab-canvas-surface")).toHaveAttribute("data-base-theme", "light");
-    expect(screen.getByTestId("lab-canvas-surface")).toHaveAttribute("data-lab-surface", "white");
   });
 
   it("remembers the surface and tolerates unavailable storage", async () => {
@@ -241,23 +252,49 @@ describe("component canvas", () => {
   });
 
   it("renders the canonical interactive states from public components", () => {
-    let view = renderPath("/actions");
-    expect(screen.getByRole("button", { name: "Primary" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Unavailable action" })).toBeDisabled();
+    let view = renderPath("/actions/button");
+    expect(overlay("Button").getByRole("button", { name: "Primary" })).toBeVisible();
+    expect(overlay("Button").getByRole("button", { name: "Unavailable action" })).toBeDisabled();
     view.unmount();
 
-    view = renderPath("/inputs");
-    expect(screen.getByRole("textbox", { name: "Error input" })).toHaveAttribute(
+    view = renderPath("/inputs/text-input");
+    expect(overlay("Text Input").getByRole("textbox", { name: "Error input" })).toHaveAttribute(
       "aria-invalid",
       "true",
     );
     view.unmount();
 
-    renderPath("/feedback");
-    expect(screen.getByRole("progressbar", { name: "Upload progress" })).toHaveAttribute(
-      "aria-valuenow",
-      "45",
-    );
+    renderPath("/feedback/progress-bar");
+    expect(
+      overlay("Progress Bar").getByRole("progressbar", { name: "Upload progress" }),
+    ).toHaveAttribute("aria-valuenow", "45");
+  });
+
+  it("keeps foundation example links on their own component", async () => {
+    const user = userEvent.setup();
+    renderPath("/foundations/links");
+
+    await user.click(overlay("Links").getAllByRole("link", { name: "Standard link" })[0]);
+    expect(window.location.hash).toBe("#/foundations/links");
+    expect(screen.getByRole("dialog", { name: "Links" })).toBeVisible();
+  });
+
+  it("shows live notifications inside the overlay and keeps them after it closes", async () => {
+    const user = userEvent.setup();
+    renderPath("/feedback/toast");
+    const details = overlay("Toast");
+
+    await user.click(details.getByRole("button", { name: "Show toast" }));
+    const notifications = await details.findByRole("region", { name: /Notifications/ });
+    expect(await within(notifications).findByText("Your changes have been saved.")).toBeVisible();
+
+    await user.click(details.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(
+      await within(await screen.findByRole("region", { name: /Notifications/ })).findByText(
+        "Your changes have been saved.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps canvas consumption on public package paths", () => {
@@ -292,41 +329,33 @@ describe("component canvas", () => {
       expect(labSource.toLowerCase()).not.toContain(forbiddenImport);
     }
 
-    for (const labOnly of ["StatusTag", "lab-canvas", "lab-inspector", "--lab-surface"]) {
+    for (const labOnly of ["StatusTag", "lab-canvas", "lab-card", "lab-overlay", "lab-inspector"]) {
       expect(packageArtifacts).not.toContain(labOnly);
     }
   });
 
-  it.each(labCategories.map(({ id }) => id))(
-    "has no representative automated accessibility violations on %s",
-    async (category) => {
-      const { container } = renderPath(`/${category}`);
+  it.each([
+    ...labCategories.map(({ id }) => `/${id}`),
+    "/actions/button",
+    "/feedback/toast",
+  ])("has no representative automated accessibility violations at %s", async (path) => {
+    const { container } = renderPath(path);
 
-      expect(
-        (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
-      ).toHaveLength(0);
-    },
-  );
-
-  it("collapses the inspector into a bottom sheet on narrow screens", async () => {
-    const user = userEvent.setup();
-    renderPath("/actions");
-
-    const handle = screen.getByRole("button", { name: "Component details" });
-    expect(handle).toHaveAttribute("aria-expanded", "false");
-    expect(handle).toHaveAttribute("aria-controls", "lab-inspector-body");
-    await user.click(handle);
-    expect(handle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      (await axe(container, { rules: { "color-contrast": { enabled: false } } })).violations,
+    ).toHaveLength(0);
   });
 
-  it("provides a responsive canvas shell", () => {
-    expect(topLevelDeclarationsFor(".lab-app-shell").get("grid-template-columns")).toContain("rem");
-    expect(topLevelDeclarationsFor(".lab-app-shell").has("width")).toBe(false);
+  it("provides a responsive grid and overlay", () => {
+    expect(topLevelDeclarationsFor(".lab-card-grid").get("grid-template-columns")).toMatch(
+      /auto-fill.*minmax/,
+    );
     expect(topLevelDeclarationsFor(".lab-canvas").get("min-width")).toBe("0");
-    expect(topLevelDeclarationsFor(".lab-inspector").get("position")).toBe("sticky");
     expect(topLevelDeclarationsFor(".lab-props-table-wrap").get("overflow-x")).toBe("auto");
-    expect(topLevelDeclarationsFor(".lab-inspector-handle").get("display")).toBe("none");
     expect(topLevelDeclarationsFor(".lab-dialog-portal").get("display")).toBe("contents");
+    expect(topLevelDeclarationsFor(".lab-overlay-body").get("grid-template-columns")).toContain(
+      "rem",
+    );
 
     for (const [surface, token] of [
       ["grey", "--base-color-background-subtle"],
@@ -341,14 +370,8 @@ describe("component canvas", () => {
     }
 
     const narrowRules = mediaRules("max-width");
-    expect(narrowRules.some((rule) => rule.selector === ".lab-app-shell")).toBe(true);
-    expect(narrowRules.some((rule) => rule.selector === ".lab-inspector")).toBe(true);
-    expect(narrowRules.some((rule) => rule.selector === ".lab-inspector-handle")).toBe(true);
-    expect(
-      narrowRules
-        .find((rule) => rule.selector === ".lab-app-shell")
-        ?.nodes.some((node) => node.type === "decl" && node.prop === "--lab-topbar-height"),
-    ).toBe(true);
+    expect(narrowRules.some((rule) => rule.selector === ".lab-overlay-body")).toBe(true);
+    expect(narrowRules.some((rule) => rule.selector === ".lab-overlay")).toBe(true);
     expect(mediaRules("prefers-reduced-motion").some((rule) => rule.selector.includes(".lab-tab"))).toBe(
       true,
     );

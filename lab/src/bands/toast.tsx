@@ -254,3 +254,12 @@ function ToastDemo({
     </section>
   );
 }
+
+export function ToastPreview() {
+  return (
+    <Toast
+      action={{ label: "Undo", onClick: () => undefined }}
+      message="Your changes have been saved."
+    />
+  );
+}

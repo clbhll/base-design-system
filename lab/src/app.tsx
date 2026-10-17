@@ -1,11 +1,11 @@
 import { BASE_THEME_ATTRIBUTE, ToastProvider } from "@calebhill/base";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "@calebhill/base/styles.css";
 
-import { getLabCategory, labCategories, labComponentDocs } from "./catalog";
-import { Band, bandElementId } from "./components/band";
+import { getLabCategory, labCategories } from "./catalog";
+import { Card, cardButtonId } from "./components/card";
 import { CategoryTabs, panelId, tabId } from "./components/category-tabs";
-import { Inspector } from "./components/inspector";
+import { ComponentOverlay } from "./components/component-overlay";
 import { labSurfaces, SurfaceControl, useLabSurface } from "./components/surface-control";
 import { DevTools } from "./dev-tools";
 import { useLabRoute } from "./routing";
@@ -13,26 +13,39 @@ import { useLabRoute } from "./routing";
 export function App() {
   const [route, navigate] = useLabRoute(labCategories);
   const [surface, setSurface] = useLabSurface();
+  const [toastHost, setToastHost] = useState<HTMLElement | null>(null);
   const category = getLabCategory(route.category);
-  const selectedBand =
-    category.bands.find(({ id }) => id === route.band) ?? category.bands[0];
+  const openComponent = category.components.find(({ id }) => id === route.component);
   const theme = labSurfaces[surface].theme;
 
   useEffect(() => {
     document.title = `${category.label} — Base`;
   }, [category.label]);
 
-  // Selecting a band from its label keeps the reader's place; every other route change
-  // (load, tab, link, Back/Forward) moves to the named band or the top of the category.
-  const keepScroll = useRef(false);
+  // A newly selected category starts at the top; the first render keeps the browser's position.
+  const renderedCategory = useRef(category.id);
   useEffect(() => {
-    if (keepScroll.current) {
-      keepScroll.current = false;
-      return;
+    if (renderedCategory.current === category.id) return;
+    renderedCategory.current = category.id;
+    window.scrollTo?.(0, 0);
+  }, [category.id]);
+
+  // An overlay opened from a card owns a history entry, so closing it goes back;
+  // one reached by a deep link has none to return to and is replaced with the grid.
+  const openedFromCard = useRef(false);
+  useEffect(() => {
+    if (!route.component) openedFromCard.current = false;
+  }, [route.component]);
+
+  function closeOverlay(component: string) {
+    if (openedFromCard.current) {
+      openedFromCard.current = false;
+      window.history.back();
+    } else {
+      navigate({ category: category.id }, { replace: true });
     }
-    if (route.band) document.getElementById(bandElementId(route.band))?.scrollIntoView?.();
-    else window.scrollTo?.(0, 0);
-  }, [route]);
+    document.getElementById(cardButtonId(component))?.focus();
+  }
 
   return (
     <>
@@ -46,7 +59,7 @@ export function App() {
       >
         Skip to canvas
       </a>
-      <ToastProvider theme={theme}>
+      <ToastProvider portalContainer={openComponent ? toastHost : null} theme={theme}>
         <div className="lab-app-shell">
           <header className="lab-topbar">
             <div className="lab-topbar-start">
@@ -77,21 +90,31 @@ export function App() {
               role="tabpanel"
               {...{ [BASE_THEME_ATTRIBUTE]: theme }}
             >
-              {category.bands.map((band) => (
-                <Band
-                  band={band}
-                  key={band.id}
-                  onSelect={() => {
-                    keepScroll.current = true;
-                    navigate({ category: category.id, band: band.id }, { replace: true });
-                  }}
-                  selected={band.id === selectedBand.id}
-                />
-              ))}
+              <ul className="lab-card-grid">
+                {category.components.map((component) => (
+                  <Card
+                    component={component}
+                    key={component.id}
+                    onOpen={() => {
+                      openedFromCard.current = true;
+                      navigate({ category: category.id, component: component.id });
+                    }}
+                  />
+                ))}
+              </ul>
             </div>
           </main>
-          <Inspector docs={labComponentDocs[selectedBand.componentId]} />
         </div>
+        {openComponent ? (
+          <ComponentOverlay
+            component={openComponent}
+            key={openComponent.id}
+            onClose={() => closeOverlay(openComponent.id)}
+            onToastHost={setToastHost}
+            surface={surface}
+            theme={theme}
+          />
+        ) : null}
       </ToastProvider>
       <DevTools />
     </>

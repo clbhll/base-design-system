@@ -63,3 +63,14 @@ export function ButtonLinkSpecimens() {
     </div>
   );
 }
+
+export function ButtonLinkPreview() {
+  return (
+    <div className="lab-specimen-row">
+      <ButtonLink href={destination}>Account</ButtonLink>
+      <ButtonLink href={destination} variant="text-accent">
+        Learn more
+      </ButtonLink>
+    </div>
+  );
+}

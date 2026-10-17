@@ -58,3 +58,11 @@ export function ProgressBarSpecimens() {
     </div>
   );
 }
+
+export function ProgressBarPreview() {
+  return (
+    <div className="lab-preview-field">
+      <ProgressBar label="Preview progress" value={45} />
+    </div>
+  );
+}

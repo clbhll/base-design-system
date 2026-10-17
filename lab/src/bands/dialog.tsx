@@ -145,3 +145,11 @@ export function DialogSpecimens() {
     </>
   );
 }
+
+export function DialogPreview() {
+  return (
+    <div className="lab-specimen-row">
+      <Button variant="secondary">Open compact Dialog</Button>
+    </div>
+  );
+}

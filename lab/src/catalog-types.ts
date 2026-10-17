@@ -14,15 +14,24 @@ export interface LabComponentDocs {
 }
 
 export interface LabBand {
-  /** URL segment, unique across the whole canvas so legacy component URLs resolve. */
   id: string;
   label: string;
-  componentId: string;
   Specimens: ComponentType;
+}
+
+export interface LabComponent {
+  /** URL segment, unique across the whole canvas so legacy component URLs resolve. */
+  id: string;
+  /** One-line anatomy summary shown on the grid card. */
+  caption: string;
+  docs: LabComponentDocs;
+  /** Small live rendering for the grid card; shown inert and hidden from assistive technology. */
+  Preview: ComponentType;
+  bands: ReadonlyArray<LabBand>;
 }
 
 export interface LabCategory {
   id: string;
   label: string;
-  bands: ReadonlyArray<LabBand>;
+  components: ReadonlyArray<LabComponent>;
 }

@@ -9,14 +9,6 @@ import { DEFAULT_LAB_CATEGORY, labHref, resolveLabRoute } from "../../lab/src/ro
 vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
 
 beforeEach(() => {
-  // jsdom implements neither scrolling API; define them so they can be observed.
-  if (!("scrollIntoView" in Element.prototype)) {
-    Object.defineProperty(Element.prototype, "scrollIntoView", {
-      configurable: true,
-      value: () => undefined,
-      writable: true,
-    });
-  }
   window.localStorage.clear();
   window.history.replaceState(null, "", "#/foundations");
 });
@@ -24,11 +16,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("lab hash routing", () => {
-  it("resolves categories and bands and defaults invalid locations", () => {
+  it("resolves categories and components and defaults invalid locations", () => {
     expect(resolveLabRoute("#/actions", labCategories)).toEqual({ category: "actions" });
     expect(resolveLabRoute("#/actions/button-link", labCategories)).toEqual({
       category: "actions",
-      band: "button-link",
+      component: "button-link",
     });
     expect(resolveLabRoute("#/inputs/button", labCategories)).toEqual({ category: "inputs" });
     expect(resolveLabRoute("", labCategories)).toEqual({ category: DEFAULT_LAB_CATEGORY });
@@ -42,22 +34,22 @@ describe("lab hash routing", () => {
 
   it.each([
     ["#/foundations", { category: "foundations" }],
-    ["#/components/button", { category: "actions", band: "button" }],
-    ["#/components/button-link", { category: "actions", band: "button-link" }],
-    ["#/components/action-menu", { category: "actions", band: "action-menu" }],
-    ["#/components/text-input", { category: "inputs", band: "text-input" }],
-    ["#/components/progress-bar", { category: "feedback", band: "progress-bar" }],
-    ["#/components/toast", { category: "feedback", band: "toast" }],
-    ["#/explorations/toast", { category: "feedback", band: "toast" }],
-    ["#/components/dialog", { category: "overlays", band: "dialog" }],
-    ["#/components/icons", { category: "foundations", band: "icons" }],
+    ["#/components/button", { category: "actions", component: "button" }],
+    ["#/components/button-link", { category: "actions", component: "button-link" }],
+    ["#/components/action-menu", { category: "actions", component: "action-menu" }],
+    ["#/components/text-input", { category: "inputs", component: "text-input" }],
+    ["#/components/progress-bar", { category: "feedback", component: "progress-bar" }],
+    ["#/components/toast", { category: "feedback", component: "toast" }],
+    ["#/explorations/toast", { category: "feedback", component: "toast" }],
+    ["#/components/dialog", { category: "overlays", component: "dialog" }],
+    ["#/components/icons", { category: "foundations", component: "icons" }],
   ])("redirects the documentation URL %s", (hash, route) => {
     expect(resolveLabRoute(hash, labCategories)).toEqual(route);
   });
 
   it("creates static-host-safe hrefs", () => {
     expect(labHref({ category: "inputs" })).toBe("#/inputs");
-    expect(labHref({ category: "inputs", band: "text-input" })).toBe("#/inputs/text-input");
+    expect(labHref({ category: "inputs", component: "text-input" })).toBe("#/inputs/text-input");
   });
 });
 
@@ -98,7 +90,8 @@ describe("lab category navigation", () => {
     await user.click(screen.getByRole("tab", { name: "Actions" }));
     expect(window.location.hash).toBe("#/actions");
     expect(screen.getByRole("tab", { name: "Actions" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("heading", { level: 2, name: "Button · default size" })).toBeVisible();
+    const actions = screen.getByRole("tabpanel", { name: "Actions" });
+    expect(within(actions).getByRole("heading", { level: 2, name: "Button" })).toBeVisible();
     expect(document.title).toBe("Actions — Base");
 
     window.history.replaceState(null, "", "#/inputs");
@@ -156,52 +149,16 @@ describe("lab category navigation", () => {
     scrollTo.mockRestore();
   });
 
-  it("brings a band reached by a later hash change into view", async () => {
-    const scrolled: string[] = [];
-    const scrollIntoView = vi
-      .spyOn(Element.prototype, "scrollIntoView")
-      .mockImplementation(function (this: Element) {
-        scrolled.push(this.id);
-      });
-    render(<App />);
-
-    window.history.replaceState(null, "", "#/overlays/dialog");
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
-
-    await waitFor(() => expect(scrolled).toContain("band-dialog"));
-    scrollIntoView.mockRestore();
-  });
-
-  it("does not scroll when a band is selected from its label", async () => {
-    const scrollIntoView = vi
-      .spyOn(Element.prototype, "scrollIntoView")
-      .mockImplementation(() => undefined);
-    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    window.history.replaceState(null, "", "#/actions");
-    render(<App />);
-    scrollIntoView.mockClear();
-    scrollTo.mockClear();
-
-    await user.click(screen.getByRole("button", { name: "Button Link" }));
-
-    expect(scrollIntoView).not.toHaveBeenCalled();
-    expect(scrollTo).not.toHaveBeenCalled();
-    scrollIntoView.mockRestore();
-    scrollTo.mockRestore();
-  });
-
-  it("normalizes a documentation URL to its band and selects it", async () => {
+  it("opens the component named by a documentation URL", async () => {
     window.history.replaceState(null, "", "#/components/button-link");
     render(<App />);
 
     await waitFor(() => expect(window.location.hash).toBe("#/actions/button-link"));
     expect(screen.getByRole("tab", { name: "Actions" })).toHaveAttribute("aria-selected", "true");
-    const inspector = screen.getByRole("complementary", { name: "Inspector" });
-    expect(within(inspector).getByRole("heading", { level: 2, name: "Button Link" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Button Link" })).toBeVisible();
   });
 
-  it("normalizes a documentation URL reached by a hash change", async () => {
+  it("opens a component reached by a later hash change", async () => {
     render(<App />);
 
     window.history.replaceState(null, "", "#/components/toast");
@@ -209,16 +166,17 @@ describe("lab category navigation", () => {
 
     await waitFor(() => expect(window.location.hash).toBe("#/feedback/toast"));
     expect(screen.getByRole("tab", { name: "Feedback" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("dialog", { name: "Toast" })).toBeVisible();
   });
 
   it("moves focus to the canvas without replacing the route", async () => {
-    window.history.replaceState(null, "", "#/actions/button");
+    window.history.replaceState(null, "", "#/actions");
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole("link", { name: "Skip to canvas" }));
 
-    expect(window.location.hash).toBe("#/actions/button");
+    expect(window.location.hash).toBe("#/actions");
     expect(screen.getByRole("main")).toHaveFocus();
   });
 
