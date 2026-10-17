@@ -28,10 +28,13 @@ describe("foundation lab", () => {
     for (const link of [
       ...screen.getAllByRole("link", { name: "Standard link" }),
       ...screen.getAllByRole("link", { name: "Muted link" }),
-      screen.getByRole("link", { name: "consumer accent" }),
     ]) {
-      expect(link).toHaveAttribute("href", "#/foundations");
+      expect(link).toHaveAttribute("href", "#/foundations/links");
     }
+    expect(screen.getByRole("link", { name: "consumer accent" })).toHaveAttribute(
+      "href",
+      "#/foundations/override",
+    );
 
     const declarations = new Map<string, string>();
     labStyles.walkRules('.lab-swatch[data-semantic-color="accent"]', (rule) => {

@@ -1,8 +1,7 @@
-import { BASE_THEME_ATTRIBUTE } from "@calebhill/base";
-import { useEffect } from "react";
+import { BASE_THEME_ATTRIBUTE, ToastProvider } from "@calebhill/base";
+import { useEffect, useRef } from "react";
 import "@calebhill/base/styles.css";
 
-import { CanvasThemeContext } from "./canvas-theme";
 import { getLabCategory, labCategories, labComponentDocs } from "./catalog";
 import { Band, bandElementId } from "./components/band";
 import { CategoryTabs, panelId, tabId } from "./components/category-tabs";
@@ -23,11 +22,17 @@ export function App() {
     document.title = `${category.label} — Base`;
   }, [category.label]);
 
-  // A deep link names a band; bring it into view once on arrival.
+  // Selecting a band from its label keeps the reader's place; every other route change
+  // (load, tab, link, Back/Forward) moves to the named band or the top of the category.
+  const keepScroll = useRef(false);
   useEffect(() => {
+    if (keepScroll.current) {
+      keepScroll.current = false;
+      return;
+    }
     if (route.band) document.getElementById(bandElementId(route.band))?.scrollIntoView?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    else window.scrollTo?.(0, 0);
+  }, [route]);
 
   return (
     <>
@@ -41,52 +46,53 @@ export function App() {
       >
         Skip to canvas
       </a>
-      <div className="lab-app-shell">
-        <header className="lab-topbar">
-          <div className="lab-topbar-start">
-            <h1 className="lab-brand base-type-heading-sm">Base</h1>
-            <SurfaceControl onChange={setSurface} surface={surface} />
-          </div>
-          <CategoryTabs
-            active={category.id}
-            categories={labCategories}
-            onSelect={(id) => {
-              if (id !== category.id) navigate({ category: id });
-            }}
-          />
-          <a
-            className="lab-repository-link base-focus-ring base-type-mono"
-            href="https://github.com/clbhll/base-design-system"
-          >
-            View source
-          </a>
-        </header>
-        <main className="lab-canvas" id="lab-canvas" tabIndex={-1}>
-          <div
-            aria-labelledby={tabId(category.id)}
-            className="lab-canvas-surface"
-            data-lab-surface={surface}
-            data-testid="lab-canvas-surface"
-            id={panelId(category.id)}
-            role="tabpanel"
-            {...{ [BASE_THEME_ATTRIBUTE]: theme }}
-          >
-            <CanvasThemeContext.Provider value={theme}>
+      <ToastProvider theme={theme}>
+        <div className="lab-app-shell">
+          <header className="lab-topbar">
+            <div className="lab-topbar-start">
+              <h1 className="lab-brand base-type-heading-sm">Base</h1>
+              <SurfaceControl onChange={setSurface} surface={surface} />
+            </div>
+            <CategoryTabs
+              active={category.id}
+              categories={labCategories}
+              onSelect={(id, options) => {
+                if (id !== category.id) navigate({ category: id }, options);
+              }}
+            />
+            <a
+              className="lab-repository-link base-focus-ring base-type-mono"
+              href="https://github.com/clbhll/base-design-system"
+            >
+              View source
+            </a>
+          </header>
+          <main className="lab-canvas" id="lab-canvas" tabIndex={-1}>
+            <div
+              aria-labelledby={tabId(category.id)}
+              className="lab-canvas-surface"
+              data-lab-surface={surface}
+              data-testid="lab-canvas-surface"
+              id={panelId(category.id)}
+              role="tabpanel"
+              {...{ [BASE_THEME_ATTRIBUTE]: theme }}
+            >
               {category.bands.map((band) => (
                 <Band
                   band={band}
                   key={band.id}
-                  onSelect={() =>
-                    navigate({ category: category.id, band: band.id }, { replace: true })
-                  }
+                  onSelect={() => {
+                    keepScroll.current = true;
+                    navigate({ category: category.id, band: band.id }, { replace: true });
+                  }}
                   selected={band.id === selectedBand.id}
                 />
               ))}
-            </CanvasThemeContext.Provider>
-          </div>
-        </main>
-        <Inspector docs={labComponentDocs[selectedBand.componentId]} />
-      </div>
+            </div>
+          </main>
+          <Inspector docs={labComponentDocs[selectedBand.componentId]} />
+        </div>
+      </ToastProvider>
       <DevTools />
     </>
   );

@@ -12,7 +12,7 @@ export function CategoryTabs({
 }: {
   categories: ReadonlyArray<LabCategory>;
   active: string;
-  onSelect: (category: string) => void;
+  onSelect: (category: string, options?: { replace: boolean }) => void;
 }) {
   const tabs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -29,7 +29,8 @@ export function CategoryTabs({
 
     event.preventDefault();
     const { id } = categories[next];
-    onSelect(id);
+    // Arrow keys sweep across tabs; record only where the user lands, not every tab passed.
+    onSelect(id, { replace: true });
     tabs.current.get(id)?.focus();
   }
 

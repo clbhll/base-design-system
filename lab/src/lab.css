@@ -389,6 +389,10 @@ body {
   min-height: 1.25rem;
 }
 
+.lab-dialog-portal {
+  display: contents;
+}
+
 .lab-dialog-fields {
   display: grid;
   gap: var(--base-ref-space-3);
@@ -719,13 +723,11 @@ body {
   border-color: var(--base-color-danger);
 }
 
-/* Below 900px the inspector becomes a collapsible bottom sheet. */
+/* Below 1024px the three-column top bar no longer fits; tabs move to a second row. */
 
-@media (max-width: 56.25rem) {
+@media (max-width: 64rem) {
   .lab-app-shell {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    padding-bottom: 3.5rem;
+    --lab-topbar-height: 6rem;
   }
 
   .lab-topbar {
@@ -738,6 +740,15 @@ body {
     grid-row: 2;
     grid-column: 1 / -1;
     overflow-x: auto;
+  }
+}
+
+/* Below 900px the inspector becomes a collapsible bottom sheet. */
+
+@media (max-width: 56.25rem) {
+  .lab-app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 3.5rem;
   }
 
   .lab-band {

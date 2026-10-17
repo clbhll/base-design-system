@@ -108,10 +108,10 @@ export function LinkSpecimens() {
         >
           <span className="base-type-caption">{label}</span>
           <span className="base-type-body">
-            <a className="base-link" href="#/foundations">
+            <a className="base-link" href="#/foundations/links">
               Standard link
             </a>{" "}
-            <a className="base-link-muted" href="#/foundations">
+            <a className="base-link-muted" href="#/foundations/links">
               Muted link
             </a>
           </span>
@@ -147,7 +147,7 @@ export function OverrideSpecimens() {
       }
     >
       <p className="base-type-body">
-        Scoped override: <a className="base-link" href="#/foundations">consumer accent</a>
+        Scoped override: <a className="base-link" href="#/foundations/override">consumer accent</a>
       </p>
       <button className="lab-pressable base-focus-ring base-pressable base-type-action" type="button">
         Consumer accent

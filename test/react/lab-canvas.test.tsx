@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../lab/src/app";
 import { labCategories, labComponentDocs } from "../../lab/src/catalog";
+import { DEFAULT_LAB_CATEGORY } from "../../lab/src/routing";
 
 vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
 vi.mock("agentation", () => ({ Agentation: () => null }));
@@ -83,6 +84,7 @@ describe("component canvas registry", () => {
       "feedback",
       "overlays",
     ]);
+    expect(labCategories[0].id).toBe(DEFAULT_LAB_CATEGORY);
     expect(new Set(allBands.map(({ id }) => id)).size).toBe(allBands.length);
     for (const category of labCategories) {
       expect(category.bands.length).toBeGreaterThan(0);
@@ -96,7 +98,7 @@ describe("component canvas registry", () => {
   });
 
   it("renders every public component export somewhere on the canvas", () => {
-    const catalogSource = globSync("lab/src/bands/*.tsx")
+    const catalogSource = [...globSync("lab/src/bands/*.tsx"), "lab/src/app.tsx"]
       .map((path) => readFileSync(path, "utf8"))
       .join("\n");
 
@@ -153,6 +155,30 @@ describe("component canvas", () => {
     expect(window.history.length).toBe(historyLength);
     expect(inspector().getByRole("heading", { level: 2, name: "Button Link" })).toBeVisible();
     expect(inspector().getByText('import { ButtonLink, MoreIcon } from "@calebhill/base";')).toBeVisible();
+  });
+
+  it("keeps foundation example links on their own band", async () => {
+    const user = userEvent.setup();
+    renderPath("/foundations/links");
+
+    await user.click(screen.getAllByRole("link", { name: "Standard link" })[0]);
+    expect(window.location.hash).toBe("#/foundations/links");
+    expect(inspector().getByRole("heading", { level: 2, name: "Links" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "consumer accent" }));
+    expect(window.location.hash).toBe("#/foundations/override");
+  });
+
+  it("keeps live notifications when switching categories", async () => {
+    const user = userEvent.setup();
+    renderPath("/feedback/toast");
+
+    await user.click(screen.getByRole("button", { name: "Show toast" }));
+    const notifications = await screen.findByRole("region", { name: /Notifications/ });
+    const notification = await within(notifications).findByText("Your changes have been saved.");
+    await user.click(screen.getByRole("tab", { name: "Overlays" }));
+
+    expect(notification).toBeInTheDocument();
   });
 
   it("switches the canvas surface while the lab chrome keeps its theme", async () => {
@@ -300,6 +326,7 @@ describe("component canvas", () => {
     expect(topLevelDeclarationsFor(".lab-inspector").get("position")).toBe("sticky");
     expect(topLevelDeclarationsFor(".lab-props-table-wrap").get("overflow-x")).toBe("auto");
     expect(topLevelDeclarationsFor(".lab-inspector-handle").get("display")).toBe("none");
+    expect(topLevelDeclarationsFor(".lab-dialog-portal").get("display")).toBe("contents");
 
     for (const [surface, token] of [
       ["grey", "--base-color-background-subtle"],
@@ -317,6 +344,11 @@ describe("component canvas", () => {
     expect(narrowRules.some((rule) => rule.selector === ".lab-app-shell")).toBe(true);
     expect(narrowRules.some((rule) => rule.selector === ".lab-inspector")).toBe(true);
     expect(narrowRules.some((rule) => rule.selector === ".lab-inspector-handle")).toBe(true);
+    expect(
+      narrowRules
+        .find((rule) => rule.selector === ".lab-app-shell")
+        ?.nodes.some((node) => node.type === "decl" && node.prop === "--lab-topbar-height"),
+    ).toBe(true);
     expect(mediaRules("prefers-reduced-motion").some((rule) => rule.selector.includes(".lab-tab"))).toBe(
       true,
     );

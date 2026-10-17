@@ -9,6 +9,14 @@ import { DEFAULT_LAB_CATEGORY, labHref, resolveLabRoute } from "../../lab/src/ro
 vi.mock("../../lab/src/dev-tools", () => ({ DevTools: () => null }));
 
 beforeEach(() => {
+  // jsdom implements neither scrolling API; define them so they can be observed.
+  if (!("scrollIntoView" in Element.prototype)) {
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: () => undefined,
+      writable: true,
+    });
+  }
   window.localStorage.clear();
   window.history.replaceState(null, "", "#/foundations");
 });
@@ -119,6 +127,68 @@ describe("lab category navigation", () => {
     expect(foundations).toHaveFocus();
     await user.keyboard("{End}");
     expect(screen.getByRole("tab", { name: "Overlays" })).toHaveFocus();
+  });
+
+  it("moves between tabs from the keyboard without adding history entries", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const historyLength = window.history.length;
+
+    screen.getByRole("tab", { name: "Foundations" }).focus();
+    await user.keyboard("{ArrowRight}{ArrowRight}{End}{Home}");
+
+    expect(window.location.hash).toBe("#/foundations");
+    expect(window.history.length).toBe(historyLength);
+
+    await user.click(screen.getByRole("tab", { name: "Inputs" }));
+    expect(window.history.length).toBe(historyLength + 1);
+  });
+
+  it("scrolls to the top of a newly selected category", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    render(<App />);
+    scrollTo.mockClear();
+
+    await user.click(screen.getByRole("tab", { name: "Feedback" }));
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+  });
+
+  it("brings a band reached by a later hash change into view", async () => {
+    const scrolled: string[] = [];
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(function (this: Element) {
+        scrolled.push(this.id);
+      });
+    render(<App />);
+
+    window.history.replaceState(null, "", "#/overlays/dialog");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+
+    await waitFor(() => expect(scrolled).toContain("band-dialog"));
+    scrollIntoView.mockRestore();
+  });
+
+  it("does not scroll when a band is selected from its label", async () => {
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(() => undefined);
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    window.history.replaceState(null, "", "#/actions");
+    render(<App />);
+    scrollIntoView.mockClear();
+    scrollTo.mockClear();
+
+    await user.click(screen.getByRole("button", { name: "Button Link" }));
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollIntoView.mockRestore();
+    scrollTo.mockRestore();
   });
 
   it("normalizes a documentation URL to its band and selects it", async () => {

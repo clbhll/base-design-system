@@ -42,6 +42,10 @@ export function labHref({ band, category }: LabRoute) {
   return band ? `#/${category}/${band}` : `#/${category}`;
 }
 
+function isSameRoute(first: LabRoute, second: LabRoute) {
+  return first.category === second.category && first.band === second.band;
+}
+
 export function useLabRoute(categories: ReadonlyArray<RoutableCategory>) {
   const [route, setRoute] = useState(() => resolveLabRoute(window.location.hash, categories));
 
@@ -52,16 +56,12 @@ export function useLabRoute(categories: ReadonlyArray<RoutableCategory>) {
       if (window.location.hash !== normalizedHash) {
         window.history.replaceState(null, "", normalizedHash);
       }
-      setRoute(next);
+      setRoute((current) => (isSameRoute(current, next) ? current : next));
     };
     window.addEventListener("hashchange", updateRoute);
-    window.addEventListener("popstate", updateRoute);
     updateRoute();
 
-    return () => {
-      window.removeEventListener("hashchange", updateRoute);
-      window.removeEventListener("popstate", updateRoute);
-    };
+    return () => window.removeEventListener("hashchange", updateRoute);
   }, [categories]);
 
   const navigate = useCallback((next: LabRoute, { replace = false } = {}) => {

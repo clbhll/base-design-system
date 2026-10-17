@@ -2,14 +2,12 @@ import {
   Button,
   TextInput,
   Toast,
-  ToastProvider,
   useToast,
   type ToastAction,
   type ToastVariant,
 } from "@calebhill/base";
 import { useState, type ReactNode } from "react";
 
-import { useCanvasTheme } from "../canvas-theme";
 import type { LabComponentDocs } from "../catalog-types";
 
 export const toastDocs: LabComponentDocs = {
@@ -99,7 +97,6 @@ export const toastDocs: LabComponentDocs = {
 };
 
 export function ToastSpecimens() {
-  const theme = useCanvasTheme();
   const [message, setMessage] = useState("Your changes have been saved.");
   const [leading, setLeading] = useState("icon");
   const [showAction, setShowAction] = useState(true);
@@ -185,9 +182,7 @@ export function ToastSpecimens() {
           {actionFeedback}
         </p>
       </section>
-      <ToastProvider theme={theme}>
-        <ToastDemo message={message} leading={leadingMedia} action={action} />
-      </ToastProvider>
+      <ToastDemo message={message} leading={leadingMedia} action={action} />
     </div>
   );
 }
