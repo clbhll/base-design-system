@@ -56,58 +56,78 @@ tokens, or package artifact, so it needs no changeset and has no Figma impact.
 
 ## Layout
 
+Each category opens on a grid of component cards. A card shows a live,
+non-interactive preview of the component, its name, and a one-line anatomy
+summary. Selecting a card expands it into a detail overlay above the grid.
+
 ```text
-┌──────────────────────────────────────────────────────────┬─────────────────┐
-│ [Grey|White|Black]   Foundations Actions Inputs …   Info │ Inspector       │
-├──────────────────────────────────────────────────────────┤                 │
-│ Band label                                               │ Component docs  │
-│            ┌specimens on the selected surface┐           │ or element      │
-│                                                          │ values          │
-├──────────────────────────────────────────────────────────┤                 │
-│ Band label                                               │                 │
-│            ┌specimens┐                                   │                 │
-└──────────────────────────────────────────────────────────┴─────────────────┘
+Grid (one per category tab)
+┌────────────────────────────────────────────────────────────────────┐
+│ [Grey|White|Black]   Foundations Actions Inputs …        View source│
+├────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                  │
+│ │   preview    │ │   preview    │ │   preview    │                  │
+│ │ Button       │ │ Button Link  │ │ ActionMenu   │                  │
+│ │ 6 variants…  │ │ 6 variants…  │ │ 3 tones…     │                  │
+│ └──────────────┘ └──────────────┘ └──────────────┘                  │
+└────────────────────────────────────────────────────────────────────┘
+
+Detail overlay (expands from the selected card)
+┌────────────────────────────────────────────────────────────────────┐
+│ Button  Beta                                                  Close │
+├──────────────────────────────────────────────┬─────────────────────┤
+│ Band label                                   │ Inspector           │
+│        specimens on the selected surface     │ summary, import,    │
+├──────────────────────────────────────────────┤ example, props,     │
+│ Band label                                   │ accessibility       │
+└──────────────────────────────────────────────┴─────────────────────┘
 ```
 
-- **Top bar:** surface control (left), category tabs (center), Information
-  toggle (right).
-- **Canvas:** the active category's bands, stacked and separated by hairline
-  rules. Each band has a monospace label and centered specimens with generous
-  whitespace.
-- **Inspector:** a fixed right panel. Below roughly 900px wide it becomes a
-  bottom sheet with a drag handle, and the canvas takes the full width.
+- **Top bar:** surface control and brand (left), category tabs (center),
+  source link (right). Below 1024px the tabs move to a second row.
+- **Card grid:** responsive, auto-filling columns. Previews render real
+  components but are `inert` and `aria-hidden`; the card's accessible control
+  is the button in its heading.
+- **Detail overlay:** a native modal `<dialog>` holding the component's bands
+  and the inspector. It expands from the selected card's bounds using the
+  shared `easingConfigs.general` curve over
+  `--base-duration-interaction-standard`, which reduced motion sets to zero.
+  Escape or Close returns to the grid with focus on the card that opened it.
+  Below 900px the overlay fills the screen and the inspector stacks under the
+  bands.
 
-## Categories and bands
+## Categories and components
 
-Categories are top-bar tabs. The proposed initial grouping, built only from
-current exports:
+Categories are top-bar tabs; each holds components, and each component holds
+one or more bands. Built only from current exports:
 
-| Tab | Bands |
+| Tab | Components (bands) |
 | --- | --- |
-| Foundations | Color, Typography, Focus, Press, Consumer override, Icons |
-| Actions | Button: default size, Button: icon size, Button: disabled, Button Link, ActionMenu |
+| Foundations | Color, Typography, Links, Focus and press, Consumer override, Icons |
+| Actions | Button (default size, icon size, disabled), Button Link, ActionMenu |
 | Inputs | Text Input |
 | Feedback | Progress Bar, Toast |
 | Overlays | Dialog |
 
-A band belongs to exactly one component (or one foundation topic), so
-selecting a band header is how a component is selected. Bands render real
-components imported from `@calebhill/base`.
+Every band renders real components imported from `@calebhill/base`.
 
 ## URL model
 
 Hash URLs stay static-host safe:
 
 ```text
-#/actions                 tab, first band
-#/actions/button          tab, scrolled to and selecting the Button band
+#/actions                 Actions grid
+#/actions/button          Actions grid with the Button overlay open
 ```
 
+Opening a card pushes a history entry, so Back closes the overlay. Closing an
+overlay opened in the lab returns along history; closing one reached by a
+deep link replaces the entry with the grid. Keyboard tab moves replace the
+entry; tab clicks push one and scroll to the top.
+
 Existing CLB-703 URLs redirect: `#/components/button` resolves to
-`#/actions/button`, `#/foundations` to `#/foundations`, and so on, following
-the existing redirect pattern in `routing.ts`. Unknown locations resolve to
-`#/foundations`. Selecting a band updates the hash with `replaceState`, so
-scrolling the canvas does not flood history; tab changes push history.
+`#/actions/button`, `#/foundations` to `#/foundations`, and so on. Unknown
+locations resolve to `#/foundations`.
 
 ## Registry
 
@@ -115,33 +135,29 @@ The typed registry stays narrow and replaces `labDocuments`:
 
 ```ts
 interface LabBand {
-  id: string;            // URL segment, e.g. "button"
-  label: string;         // band label, e.g. "Button · default size"
-  componentId: string;   // inspector docs key; several bands may share one
+  id: string;
+  label: string;         // e.g. "Default size"
   Specimens: ComponentType;
 }
 
-interface LabComponentDocs {
-  id: string;
-  title: string;
-  status: "unstable" | "beta" | "stable" | "deprecated";
-  importStatement: string;
-  summary: string;
-  props: PropRow[];
-  accessibility: string[];
-  example: string;
+interface LabComponent {
+  id: string;            // URL segment, unique across categories
+  caption: string;       // anatomy summary on the card
+  docs: LabComponentDocs;
+  Preview: ComponentType;
+  bands: LabBand[];
 }
 
 interface LabCategory {
   id: string;            // URL segment, e.g. "actions"
   label: string;
-  bands: LabBand[];
+  components: LabComponent[];
 }
 ```
 
-The existing `documents/*.tsx` content is split into specimens (into bands) and
-docs data (into `LabComponentDocs`). `PropsTable`, `CodeSample`,
-`AccessibilityNotes`, and `StatusTag` are reused inside the inspector.
+The existing `documents/*.tsx` content is split into a preview, specimens
+(bands), and docs data. `PropsTable`, `CodeSample`, `AccessibilityNotes`, and
+`StatusTag` are reused inside the inspector.
 
 ## Surface control
 
@@ -153,8 +169,9 @@ Grey, White, and Black are lab presentation choices, not public tokens:
 | White | `light` | `--base-color-background` |
 | Black | `dark` | `--base-color-background` |
 
-The control sets the attribute once on the canvas root. The lab chrome (top
-bar, inspector) stays in a fixed theme so changing the surface does not move
+The control sets the attribute on the grid surface and the overlay's specimen
+surface. The lab chrome (top bar, overlay header, inspector) stays in a fixed
+theme so changing the surface does not move
 the tool around the reviewer. The last choice persists in `localStorage`,
 wrapped in try/catch.
 
@@ -162,10 +179,9 @@ wrapped in try/catch.
 
 ### Default mode (Information off)
 
-Specimens are fully interactive. Selecting a band (clicking its label, or
-focusing it and pressing Enter) shows that component's docs in the inspector:
-title, status, summary, import statement, example, props, and accessibility
-notes. With no selection, the inspector shows the first band of the tab.
+The inspector lives in the detail overlay beside the bands. Specimens are
+fully interactive, and the inspector shows the component's summary, status,
+import statement, example, props, and accessibility notes.
 
 ### Information mode (Information on)
 

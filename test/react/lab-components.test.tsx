@@ -68,8 +68,8 @@ function renderPath(path: string) {
 }
 
 describe("alpha component lab", () => {
-  it("shows every approved Button variant and state in its focused document", async () => {
-    const { container } = renderPath("/components/button");
+  it("shows every approved Button variant and state on the Actions canvas", async () => {
+    const { container } = renderPath("/actions/button");
 
     expect(screen.getByRole("button", { name: "Primary" })).toBeVisible();
 
@@ -91,7 +91,7 @@ describe("alpha component lab", () => {
   });
 
   it("gives each ButtonLink specimen a valid fragment destination", () => {
-    renderPath("/components/button-link");
+    renderPath("/actions/button-link");
 
     for (const name of [
       "Primary",
@@ -103,19 +103,19 @@ describe("alpha component lab", () => {
       "More destinations",
     ]) {
       const link = screen.getByRole("link", { name });
-      expect(link).toHaveAttribute("href", "#/components/button-link");
+      expect(link).toHaveAttribute("href", "#/actions/button-link");
     }
   });
 
   it("shows TextInput error association and determinate progress semantics", () => {
-    let view = renderPath("/components/text-input");
+    let view = renderPath("/inputs/text-input");
     const input = screen.getByRole("textbox", { name: "Error input" });
     expect(input).toHaveAttribute("aria-invalid", "true");
     const error = document.getElementById(input.getAttribute("aria-describedby") ?? "");
     expect(error).toHaveAttribute("role", "alert");
     view.unmount();
 
-    view = renderPath("/components/progress-bar");
+    view = renderPath("/feedback/progress-bar");
     expect(screen.getByRole("progressbar", { name: "Upload progress" })).toHaveAttribute(
       "aria-valuenow",
       "45",
@@ -128,7 +128,7 @@ describe("alpha component lab", () => {
     ["wide", "Review details", "Project summary"],
   ] as const)("exercises the %s Dialog and restores its trigger", async (size, title, field) => {
     const user = userEvent.setup();
-    renderPath("/components/dialog");
+    renderPath("/overlays/dialog");
 
     const trigger = screen.getByRole("button", {
       name: `Open ${size} Dialog`,
@@ -145,7 +145,7 @@ describe("alpha component lab", () => {
 
   it("exercises ActionMenu selection and restores its trigger", async () => {
     const user = userEvent.setup();
-    renderPath("/components/action-menu");
+    renderPath("/actions/action-menu");
 
     const trigger = screen.getByRole("button", { name: "Photo options" });
     await user.click(trigger);
@@ -160,7 +160,7 @@ describe("alpha component lab", () => {
   });
 
   it("keeps the photos.me parity reference lab-only", () => {
-    renderPath("/components/action-menu");
+    renderPath("/actions/action-menu");
 
     const reference = screen.getByTestId("action-menu-parity-reference");
     expect(reference).toHaveAttribute(

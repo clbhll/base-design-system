@@ -1,32 +1,81 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-export const DEFAULT_LAB_PATH = "/foundations" as const;
+export const DEFAULT_LAB_CATEGORY = "foundations" as const;
 
-export function resolveLabPath(hash: string, validPaths: ReadonlySet<string>) {
-  const path = hash.startsWith("#/") ? hash.slice(1) : DEFAULT_LAB_PATH;
-  if (path === "/explorations/toast" && validPaths.has("/components/toast")) return "/components/toast";
-  return validPaths.has(path) ? path : DEFAULT_LAB_PATH;
+export interface LabRoute {
+  category: string;
+  component?: string;
 }
 
-export function labHref(path: string) {
-  return `#${path}`;
+interface RoutableCategory {
+  id: string;
+  components: ReadonlyArray<{ id: string }>;
 }
 
-export function useLabPath(validPaths: ReadonlySet<string>) {
-  const [path, setPath] = useState(() => resolveLabPath(window.location.hash, validPaths));
+// CLB-703 documentation URLs named one component per page; they now open that component.
+const legacyPrefixes = new Set(["components", "explorations"]);
+
+export function resolveLabRoute(
+  hash: string,
+  categories: ReadonlyArray<RoutableCategory>,
+): LabRoute {
+  const fallback = { category: DEFAULT_LAB_CATEGORY };
+  if (!hash.startsWith("#/")) return fallback;
+
+  const [first, second, ...rest] = hash.slice(2).split("/");
+  if (rest.length > 0) return fallback;
+
+  if (legacyPrefixes.has(first) && second) {
+    const owner = categories.find(({ components }) => components.some(({ id }) => id === second));
+    return owner ? { category: owner.id, component: second } : fallback;
+  }
+
+  const category = categories.find(({ id }) => id === first);
+  if (!category) return fallback;
+
+  return second && category.components.some(({ id }) => id === second)
+    ? { category: category.id, component: second }
+    : { category: category.id };
+}
+
+export function labHref({ category, component }: LabRoute) {
+  return component ? `#/${category}/${component}` : `#/${category}`;
+}
+
+function isSameRoute(first: LabRoute, second: LabRoute) {
+  return first.category === second.category && first.component === second.component;
+}
+
+export function useLabRoute(categories: ReadonlyArray<RoutableCategory>) {
+  const [route, setRoute] = useState(() => resolveLabRoute(window.location.hash, categories));
 
   useEffect(() => {
-    const readPath = () => resolveLabPath(window.location.hash, validPaths);
-    const updatePath = () => setPath(readPath());
-    window.addEventListener("hashchange", updatePath);
+    const updateRoute = () => {
+      const next = resolveLabRoute(window.location.hash, categories);
+      const normalizedHash = labHref(next);
+      if (window.location.hash !== normalizedHash) {
+        window.history.replaceState(null, "", normalizedHash);
+      }
+      setRoute((current) => (isSameRoute(current, next) ? current : next));
+    };
+    // History traversal can fire both events; unchanged routes are ignored above.
+    window.addEventListener("hashchange", updateRoute);
+    window.addEventListener("popstate", updateRoute);
+    updateRoute();
 
-    const normalizedHash = labHref(readPath());
-    if (window.location.hash !== normalizedHash) {
-      window.history.replaceState(null, "", normalizedHash);
+    return () => {
+      window.removeEventListener("hashchange", updateRoute);
+      window.removeEventListener("popstate", updateRoute);
+    };
+  }, [categories]);
+
+  const navigate = useCallback((next: LabRoute, { replace = false } = {}) => {
+    const href = labHref(next);
+    if (window.location.hash !== href) {
+      window.history[replace ? "replaceState" : "pushState"](null, "", href);
     }
+    setRoute(next);
+  }, []);
 
-    return () => window.removeEventListener("hashchange", updatePath);
-  }, [validPaths]);
-
-  return path;
+  return [route, navigate] as const;
 }

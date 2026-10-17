@@ -1,75 +1,121 @@
-import { useEffect } from "react";
+import { BASE_THEME_ATTRIBUTE, ToastProvider } from "@calebhill/base";
+import { useEffect, useRef, useState } from "react";
 import "@calebhill/base/styles.css";
 
-import { getLabDocument, labDocumentPaths, labDocuments } from "./component-registry";
+import { getLabCategory, labCategories } from "./catalog";
+import { Card, cardButtonId } from "./components/card";
+import { CategoryTabs, panelId, tabId } from "./components/category-tabs";
+import { ComponentOverlay } from "./components/component-overlay";
+import { labSurfaces, SurfaceControl, useLabSurface } from "./components/surface-control";
 import { DevTools } from "./dev-tools";
-import { labHref, useLabPath } from "./routing";
-
-const groupLabels = {
-  foundations: "Foundations",
-  components: "Components",
-} as const;
+import { useLabRoute } from "./routing";
 
 export function App() {
-  const path = useLabPath(labDocumentPaths);
-  const activeDocument = getLabDocument(path);
-  const { Document } = activeDocument;
+  const [route, navigate] = useLabRoute(labCategories);
+  const [surface, setSurface] = useLabSurface();
+  const [toastHost, setToastHost] = useState<HTMLElement | null>(null);
+  const category = getLabCategory(route.category);
+  const openComponent = category.components.find(({ id }) => id === route.component);
+  const theme = labSurfaces[surface].theme;
 
   useEffect(() => {
-    document.title = `${activeDocument.label} — Base`;
-  }, [activeDocument.label]);
+    document.title = `${category.label} — Base`;
+  }, [category.label]);
+
+  // A newly selected category starts at the top; the first render keeps the browser's position.
+  const renderedCategory = useRef(category.id);
+  useEffect(() => {
+    if (renderedCategory.current === category.id) return;
+    renderedCategory.current = category.id;
+    window.scrollTo?.(0, 0);
+  }, [category.id]);
+
+  // An overlay opened from a card owns a history entry, so closing it goes back;
+  // one reached by a deep link has none to return to and is replaced with the grid.
+  const openedFromCard = useRef(false);
+  useEffect(() => {
+    if (!route.component) openedFromCard.current = false;
+  }, [route.component]);
+
+  function closeOverlay(component: string) {
+    if (openedFromCard.current) {
+      openedFromCard.current = false;
+      window.history.back();
+    } else {
+      navigate({ category: category.id }, { replace: true });
+    }
+    document.getElementById(cardButtonId(component))?.focus();
+  }
 
   return (
     <>
       <a
         className="lab-skip-link base-focus-ring"
-        href="#lab-document"
+        href="#lab-canvas"
         onClick={(event) => {
           event.preventDefault();
-          document.getElementById("lab-document")?.focus();
+          document.getElementById("lab-canvas")?.focus();
         }}
       >
-        Skip to document
+        Skip to canvas
       </a>
-      <div className="lab-app-shell">
-        <aside className="lab-sidebar">
-          <header className="lab-brand">
-            <span className="base-type-heading-md">Base</span>
-            <span className="base-type-caption">Alpha React component library</span>
+      <ToastProvider portalContainer={openComponent ? toastHost : null} theme={theme}>
+        <div className="lab-app-shell">
+          <header className="lab-topbar">
+            <div className="lab-topbar-start">
+              <h1 className="lab-brand base-type-heading-sm">Base</h1>
+              <SurfaceControl onChange={setSurface} surface={surface} />
+            </div>
+            <CategoryTabs
+              active={category.id}
+              categories={labCategories}
+              onSelect={(id, options) => {
+                if (id !== category.id) navigate({ category: id }, options);
+              }}
+            />
+            <a
+              className="lab-repository-link base-focus-ring base-type-mono"
+              href="https://github.com/clbhll/base-design-system"
+            >
+              View source
+            </a>
           </header>
-          <nav aria-label="Base documentation">
-            {(Object.keys(groupLabels) as Array<keyof typeof groupLabels>).map((group) => (
-              <section className="lab-nav-group" key={group}>
-                <h2 className="base-type-caption">{groupLabels[group]}</h2>
-                <ul>
-                  {labDocuments
-                    .filter((document) => document.group === group)
-                    .map((document) => (
-                      <li key={document.path}>
-                        <a
-                          aria-current={document.path === path ? "page" : undefined}
-                          className="lab-nav-link base-focus-ring base-type-body-sm"
-                          href={labHref(document.path)}
-                        >
-                          {document.label}
-                        </a>
-                      </li>
-                    ))}
-                </ul>
-              </section>
-            ))}
-          </nav>
-          <a
-            className="lab-repository-link base-focus-ring base-type-body-sm"
-            href="https://github.com/clbhll/base-design-system"
-          >
-            View source
-          </a>
-        </aside>
-        <main className="lab-document" id="lab-document" tabIndex={-1}>
-          <Document />
-        </main>
-      </div>
+          <main className="lab-canvas" id="lab-canvas" tabIndex={-1}>
+            <div
+              aria-labelledby={tabId(category.id)}
+              className="lab-canvas-surface"
+              data-lab-surface={surface}
+              data-testid="lab-canvas-surface"
+              id={panelId(category.id)}
+              role="tabpanel"
+              {...{ [BASE_THEME_ATTRIBUTE]: theme }}
+            >
+              <ul className="lab-card-grid">
+                {category.components.map((component) => (
+                  <Card
+                    component={component}
+                    key={component.id}
+                    onOpen={() => {
+                      openedFromCard.current = true;
+                      navigate({ category: category.id, component: component.id });
+                    }}
+                  />
+                ))}
+              </ul>
+            </div>
+          </main>
+        </div>
+        {openComponent ? (
+          <ComponentOverlay
+            component={openComponent}
+            key={openComponent.id}
+            onClose={() => closeOverlay(openComponent.id)}
+            onToastHost={setToastHost}
+            surface={surface}
+            theme={theme}
+          />
+        ) : null}
+      </ToastProvider>
       <DevTools />
     </>
   );
